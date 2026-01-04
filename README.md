@@ -63,4 +63,10 @@ TripPulse คือแอปสำหรับ **วางแผนทริป�
 - **Geoapify Places API** (Places Discovery)
 - **OpenRouteService API** (Route & Distance Calculation)
 
+---
+
+## Preview Design
+https://preview.builtwithrocket.new/trippulse-9eox848
+---
+
 
