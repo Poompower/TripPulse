@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:trippulse/pages/trip_list_screen.dart'; // Import จากโฟลเดอร์ pages
 
-void main() {
+void main() async{
   // ต้องมีเพื่อให้ SQLite เริ่มต้นทำงานได้
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MainApp());
 }
 

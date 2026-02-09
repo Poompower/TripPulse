@@ -1,60 +1,43 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import 'package:flutter/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/trip.dart';
 
 class DatabaseService {
-  Future<Database> getDatabase() async {
-    WidgetsFlutterBinding.ensureInitialized();
+  // สร้าง Instance ของ Firestore
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-    // 1. หาตำแหน่ง Path ที่เก็บฐานข้อมูล
-    final String path = join(await getDatabasesPath(), 'travel_db.db');
+  // เปลี่ยนชื่อ Collection เป็น 'trips'
+  final String _collection = 'trips';
 
-    // 2. ปรินท์ออกมาดูที่ Debug Console
-    print("📍 Database Path: $path");
-
-    return openDatabase(
-      path, // ใช้ตัวแปร path ที่เราสร้างไว้
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE trips(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, destination TEXT, startDate TEXT, endDate TEXT, currency TEXT, budget REAL)',
-        );
-      },
-      version: 1,
-    );
-  }
-
+  // 1. เพิ่มข้อมูลทริปใหม่ (Create)
   Future<void> insertTrip(Trip trip) async {
-    final db = await getDatabase();
-    await db.insert(
-      'trips',
-      trip.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    // ถ้าไม่มี id (เพิ่มใหม่) ให้ Firestore เจนให้ หรือถ้ามี id (แก้ไข) ให้ทับตัวเดิม
+    final docRef = trip.id == null 
+        ? _db.collection(_collection).doc() 
+        : _db.collection(_collection).doc(trip.id.toString());
+
+    await docRef.set(trip.toMap());
   }
 
+  // 2. ดึงข้อมูลทริปทั้งหมด (Read) - เปลี่ยนจาก Future เป็น Stream จะดีมากเพื่อ Real-time
   Future<List<Trip>> trips() async {
-    final db = await getDatabase();
-    final List<Map<String, dynamic>> maps = await db.query(
-      'trips',
-      orderBy: 'id DESC',
-    );
-    return List.generate(
-      maps.length,
-      (i) => Trip(
-        id: maps[i]['id'],
-        title: maps[i]['title'],
-        destination: maps[i]['destination'],
-        startDate: maps[i]['startDate'],
-        endDate: maps[i]['endDate'],
-        currency: maps[i]['currency'],
-        budget: maps[i]['budget'],
-      ),
-    );
+    final querySnapshot = await _db.collection(_collection).get();
+    
+    return querySnapshot.docs.map((doc) {
+      final data = doc.data();
+      return Trip(
+        id: doc.id as dynamic, // ใช้ ID จาก Firestore แทน
+        title: data['title'],
+        destination: data['destination'],
+        startDate: data['startDate'],
+        endDate: data['endDate'],
+        currency: data['currency'],
+        budget: (data['budget'] as num).toDouble(),
+      );
+    }).toList();
   }
 
-  Future<void> deleteTrip(int id) async {
-    final db = await getDatabase();
-    await db.delete('trips', where: 'id = ?', whereArgs: [id]);
+  // 3. ลบข้อมูล (Delete)
+  Future<void> deleteTrip(dynamic id) async {
+    await _db.collection(_collection).doc(id.toString()).delete();
   }
 }

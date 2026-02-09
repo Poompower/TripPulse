@@ -1,5 +1,5 @@
 class Trip {
-  final int? id;
+  final dynamic id;
   final String title;
   final String destination;
   final String startDate;
@@ -13,11 +13,14 @@ class Trip {
     required this.currency, required this.budget,
   });
 
-  Map<String, dynamic> toMap() {
+ Map<String, dynamic> toMap() {
     return {
-      'id': id, 'title': title, 'destination': destination,
-      'startDate': startDate, 'endDate': endDate,
-      'currency': currency, 'budget': budget,
+      'title': title,
+      'destination': destination,
+      'startDate': startDate,
+      'endDate': endDate,
+      'currency': currency,
+      'budget': budget,
     };
   }
 }
