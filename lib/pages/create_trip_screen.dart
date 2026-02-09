@@ -18,13 +18,45 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   final _endCtrl = TextEditingController();
   final _budgetCtrl = TextEditingController();
 
+  // ฟังก์ชันแสดง Error Dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ฟังก์ชันเลือกวันที่
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectDate(BuildContext context, TextEditingController controller, bool isEndDate) async {
+    DateTime initialDate = DateTime.now();
+    DateTime firstDate = DateTime(2000);
+    DateTime lastDate = DateTime(2101);
+
+    // ถ้าเป็น End Date ให้ firstDate เป็น Start Date ที่เลือก
+    if (isEndDate && _startCtrl.text.isNotEmpty) {
+      try {
+        firstDate = DateFormat('MMM dd, yyyy').parse(_startCtrl.text);
+        initialDate = firstDate;
+      } catch (e) {
+        // ถ้าแปลงวันที่ไม่ได้ให้ใช้วันปัจจุบัน
+        initialDate = DateTime.now();
+      }
+    }
+
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (picked != null) {
       setState(() {
@@ -73,9 +105,9 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildDateBox("Start Date", _startCtrl)),
+                      Expanded(child: _buildDateBox("Start Date", _startCtrl, false)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildDateBox("End Date", _endCtrl)),
+                      Expanded(child: _buildDateBox("End Date", _endCtrl, true)),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -108,17 +140,47 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                   elevation: 0,
                 ),
                 onPressed: () async {
-                  if (_titleCtrl.text.isNotEmpty && _destCtrl.text.isNotEmpty) {
-                    await DatabaseService().insertTrip(Trip(
-                      title: _titleCtrl.text,
-                      destination: _destCtrl.text,
-                      startDate: _startCtrl.text,
-                      endDate: _endCtrl.text,
-                      currency: "USD",
-                      budget: double.tryParse(_budgetCtrl.text) ?? 0,
-                    ));
-                    if (mounted) Navigator.pop(context);
+                  // ตรวจสอบข้อมูล
+                  if (_titleCtrl.text.isEmpty) {
+                    _showErrorDialog('Please enter trip title');
+                    return;
                   }
+                  if (_destCtrl.text.isEmpty) {
+                    _showErrorDialog('Please enter destination');
+                    return;
+                  }
+                  if (_startCtrl.text.isEmpty) {
+                    _showErrorDialog('Please select start date');
+                    return;
+                  }
+                  if (_endCtrl.text.isEmpty) {
+                    _showErrorDialog('Please select end date');
+                    return;
+                  }
+
+                  // ตรวจสอบว่า End Date ไม่น้อยกว่า Start Date
+                  try {
+                    DateTime startDate = DateFormat('MMM dd, yyyy').parse(_startCtrl.text);
+                    DateTime endDate = DateFormat('MMM dd, yyyy').parse(_endCtrl.text);
+                    
+                    if (endDate.isBefore(startDate)) {
+                      _showErrorDialog('End date must be after start date');
+                      return;
+                    }
+                  } catch (e) {
+                    _showErrorDialog('Invalid date format');
+                    return;
+                  }
+
+                  await DatabaseService().insertTrip(Trip(
+                    title: _titleCtrl.text,
+                    destination: _destCtrl.text,
+                    startDate: _startCtrl.text,
+                    endDate: _endCtrl.text,
+                    currency: "USD",
+                    budget: double.tryParse(_budgetCtrl.text) ?? 0,
+                  ));
+                  if (mounted) Navigator.pop(context);
                 },
                 child: const Text("Save Trip", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
@@ -129,14 +191,14 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     );
   }
 
-  Widget _buildDateBox(String label, TextEditingController ctrl) {
+  Widget _buildDateBox(String label, TextEditingController ctrl, bool isEndDate) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
         const SizedBox(height: 8),
         InkWell(
-          onTap: () => _selectDate(context, ctrl),
+          onTap: () => _selectDate(context, ctrl, isEndDate),
           child: IgnorePointer(
             child: TextField(
               controller: ctrl,

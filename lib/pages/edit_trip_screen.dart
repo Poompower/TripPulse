@@ -36,21 +36,37 @@ class _EditTripScreenState extends State<EditTripScreen> {
   Future<void> _selectDate(
     BuildContext context,
     TextEditingController controller,
+    bool isEndDate,
   ) async {
     DateTime initialDate = DateTime.now();
+    DateTime firstDate = DateTime(2000);
+    DateTime lastDate = DateTime(2101);
+
+    // ถ้าเป็น End Date ให้ firstDate เป็น Start Date ที่เลือก
+    if (isEndDate && _startCtrl.text.isNotEmpty) {
+      try {
+        firstDate = DateFormat('MMM dd, yyyy').parse(_startCtrl.text);
+        initialDate = firstDate;
+      } catch (e) {
+        // ถ้าแปลงวันที่ไม่ได้ให้ใช้วันปัจจุบัน
+        initialDate = DateTime.now();
+      }
+    }
+
+    // ใช้วันที่เก่าเป็น initialDate ถ้ามีค่าอยู่แล้ว
     try {
       if (controller.text.isNotEmpty) {
-        initialDate = DateFormat('MMM dd, yyyy').parse(controller.text);
+        initialDate = DateFormat('MMm dd, yyyy').parse(controller.text);
       }
     } catch (e) {
-      // If parse fails, use current date
+      // If parse fails, use the firstDate or current date
     }
 
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (picked != null) {
       setState(() {
@@ -105,9 +121,9 @@ class _EditTripScreenState extends State<EditTripScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildDateBox("Start Date", _startCtrl)),
+                      Expanded(child: _buildDateBox("Start Date", _startCtrl, false)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildDateBox("End Date", _endCtrl)),
+                      Expanded(child: _buildDateBox("End Date", _endCtrl, true)),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -143,27 +159,56 @@ class _EditTripScreenState extends State<EditTripScreen> {
                   elevation: 0,
                 ),
                 onPressed: () async {
-                  if (_titleCtrl.text.isNotEmpty && _destCtrl.text.isNotEmpty) {
-                    // Create updated trip object
-                    // Using conflictAlgorithm.replace in insertTrip will update existing ID
-                    final updatedTrip = Trip(
-                      id: widget.trip.id,
-                      title: _titleCtrl.text,
-                      destination: _destCtrl.text,
-                      startDate: _startCtrl.text,
-                      endDate: _endCtrl.text,
-                      currency: _selectedCurrency,
-                      budget: double.tryParse(_budgetCtrl.text) ?? 0,
-                    );
-
-                    await DatabaseService().insertTrip(updatedTrip);
-
-                    if (mounted)
-                      Navigator.pop(
-                        context,
-                        true,
-                      ); // Return true to indicate update
+                  // ตรวจสอบข้อมูล
+                  if (_titleCtrl.text.isEmpty) {
+                    _showErrorDialog('Please enter trip title');
+                    return;
                   }
+                  if (_destCtrl.text.isEmpty) {
+                    _showErrorDialog('Please enter destination');
+                    return;
+                  }
+                  if (_startCtrl.text.isEmpty) {
+                    _showErrorDialog('Please select start date');
+                    return;
+                  }
+                  if (_endCtrl.text.isEmpty) {
+                    _showErrorDialog('Please select end date');
+                    return;
+                  }
+
+                  // ตรวจสอบว่า End Date ไม่น้อยกว่า Start Date
+                  try {
+                    DateTime startDate = DateFormat('MMM dd, yyyy').parse(_startCtrl.text);
+                    DateTime endDate = DateFormat('MMM dd, yyyy').parse(_endCtrl.text);
+                    
+                    if (endDate.isBefore(startDate)) {
+                      _showErrorDialog('End date must be after start date');
+                      return;
+                    }
+                  } catch (e) {
+                    _showErrorDialog('Invalid date format');
+                    return;
+                  }
+
+                  // Create updated trip object
+                  // Using conflictAlgorithm.replace in insertTrip will update existing ID
+                  final updatedTrip = Trip(
+                    id: widget.trip.id,
+                    title: _titleCtrl.text,
+                    destination: _destCtrl.text,
+                    startDate: _startCtrl.text,
+                    endDate: _endCtrl.text,
+                    currency: _selectedCurrency,
+                    budget: double.tryParse(_budgetCtrl.text) ?? 0,
+                  );
+                  await DatabaseService().insertTrip(updatedTrip);
+
+                  if (mounted)
+                    Navigator.pop(
+                      context,
+                      true,
+                    ); // Return true to indicate update
                 },
                 child: const Text(
                   "Save Changes",
@@ -177,14 +222,30 @@ class _EditTripScreenState extends State<EditTripScreen> {
     );
   }
 
-  Widget _buildDateBox(String label, TextEditingController ctrl) {
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateBox(String label, TextEditingController ctrl, bool isEndDate) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
         const SizedBox(height: 8),
         InkWell(
-          onTap: () => _selectDate(context, ctrl),
+          onTap: () => _selectDate(context, ctrl, isEndDate),
           child: IgnorePointer(
             child: TextField(
               controller: ctrl,
