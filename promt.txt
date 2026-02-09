@@ -1,0 +1,216 @@
+Build a Flutter app MVP named **TripPulse** (travel planner).
+Treat this as an app-building task (generate runnable code), not documentation.
+
+====================
+CONSTRAINTS
+====================
+- MVP scope only (must be demo-ready and runnable).
+- Flutter app using clean architecture:
+  - models
+  - services (API)
+  - repositories (local + cloud)
+  - state management
+  - UI screens
+- Use Riverpod for state management.
+- Use Dio for networking.
+- Include loading, error, and empty states.
+- Include named navigation routes.
+- Local persistence: SQLite (sqflite).
+- Cloud persistence: Firebase Firestore.
+- Local-first, cloud-sync approach.
+
+====================
+AUTH + CLOUD DATABASE
+====================
+- Use Firebase Authentication with Google Sign-In.
+- User must sign in before accessing trips.
+- Store and sync data to Firestore under the authenticated user UID.
+- If user deletes the app and reinstalls, data must be restored from Firestore.
+- SQLite is used as the primary local cache (offline-first).
+
+Firestore structure (example):
+- users/{uid}
+- users/{uid}/trips/{tripId}
+- users/{uid}/trips/{tripId}/itineraryDays/{dateKey}
+
+====================
+EXTERNAL APIS (USE THESE EXACTLY)
+====================
+
+1) Places (Attractions)
+- API: Geoapify Places API
+- Requires API key
+- API key must be read from environment/config file
+- Purpose: fetch tourist attractions for a city or nearby coordinates
+- If API key is missing, provide a mock places service fallback
+
+2) Weather
+- API: Open-Meteo (https://open-meteo.com/)
+- Purpose: daily weather forecast for destination
+- No API key required
+- Cache responses briefly (memory or SQLite)
+
+3) Routes / Directions
+- API: Geoapify Routing API
+- Uses the SAME Geoapify API key as Places API
+- Purpose: compute route distance and duration between places
+- API key must be read from environment/config file
+- If API key is missing, provide a mock routing service that returns fake distance/time
+
+4) Currency Exchange
+- API: Frankfurter (https://api.frankfurter.app)
+- Purpose: get exchange rates relative to base currency
+- No API key required
+
+IMPORTANT:
+- Use a single Geoapify API key for both Places and Routing.
+- API keys must stay in environment/config file.
+- Do NOT hardcode keys inside services or UI.
+- App must still run using mock services if keys are missing.
+
+====================
+MVP FEATURES TO IMPLEMENT
+====================
+
+0) Authentication
+- Splash/Auth gate screen.
+- Google Sign-In.
+- Sign out support.
+- On first login, create user document in Firestore.
+- On login, pull trips from Firestore into SQLite.
+
+1) Trip Management
+- Create trip with:
+  - title
+  - destination (city/country)
+  - optional latitude / longitude
+  - start date
+  - end date
+  - base currency
+- Trip list screen.
+- Trip detail screen.
+- Edit and delete trip.
+- Persist trips in SQLite and sync to Firestore.
+
+2) Itinerary
+- Auto-generate itinerary days between startDate and endDate.
+- Add places to a specific day.
+- Reorder places in a day.
+- Remove place from a day.
+- Persist itinerary in SQLite and sync to Firestore.
+
+3) Places Search
+- Search attractions for destination city (or lat/lon).
+- Show results list.
+- Place detail screen showing:
+  - name
+  - short description
+  - category
+  - coordinates
+- “Add to Day” action from search results or detail screen.
+
+4) Weather
+- Show daily weather forecast on Trip Detail screen.
+- Display min/max temperature and weather code/icon.
+- Load via Open-Meteo API.
+- Cache weather briefly.
+
+5) Map + Route Summary (MVP-level)
+- Map/Route screen for a selected itinerary day.
+- Show markers or lightweight placeholder map UI.
+- Compute and display:
+  - total distance (km)
+  - estimated travel time (minutes)
+- Route summary must use Geoapify Routing API or mock fallback.
+
+====================
+REQUIRED SCREENS
+====================
+- Splash / Auth Gate
+- Home / Trip List
+- Create/Edit Trip
+- Trip Detail
+  - itinerary days
+  - weather card
+  - budget summary placeholder
+- Day Itinerary
+  - list of places
+  - reorder support
+- Places Search Results
+- Place Detail
+- Map / Route Summary screen for a day
+- Profile / Settings (Sign Out)
+
+====================
+DATA MODELS
+====================
+Define models with JSON parsing where applicable:
+
+- Trip {
+    id,
+    title,
+    destinationName,
+    lat?,
+    lon?,
+    startDate,
+    endDate,
+    baseCurrency
+  }
+
+- ItineraryDay {
+    date,
+    places: List<Place>
+  }
+
+- Place {
+    id,
+    name,
+    category,
+    descriptionShort,
+    lat,
+    lon,
+    imageUrl?
+  }
+
+- WeatherDay {
+    date,
+    minTemp,
+    maxTemp,
+    weatherCode
+  }
+
+- RouteSummary {
+    distanceKm,
+    durationMin
+  }
+
+====================
+DELIVERABLE
+====================
+Generate the Flutter project structure and key Dart files:
+- /lib/main.dart
+- /lib/app.dart (theme + router)
+- /lib/core/config/environment.dart
+- /lib/core/config/firebase_options.dart (or note flutterfire configure)
+- /lib/core/database/sqlite_helper.dart
+- /lib/core/services/
+- /lib/features/
+  - auth
+  - trip
+  - itinerary
+  - places
+  - weather
+  - map
+- API services using Dio.
+- Mock services fallback.
+- SQLite repositories + Firestore repositories.
+- Riverpod providers and UI screens.
+
+====================
+HOW TO RUN
+====================
+Include:
+- pubspec.yaml dependencies (sqflite, path, firebase_auth, cloud_firestore, google_sign_in, dio, flutter_riverpod)
+- How to setup Firebase (flutterfire configure)
+- Where API keys are stored (environment.dart)
+- Which APIs use mock fallback if keys are missing
