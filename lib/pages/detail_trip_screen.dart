@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/trip.dart';
+import '../models/activity.dart'; // อย่าลืมสร้าง model นี้
 import '../widgets/custom_bottom_bar.dart';
 import '../widgets/weather_forecast_card.dart';
+import '../services/database_service.dart';
 import 'edit_trip_screen.dart';
+import 'add_activity_screen.dart';
+import 'activity_detail_screen.dart';
 
 class TripDetailScreen extends StatefulWidget {
   final Trip trip;
@@ -15,15 +22,65 @@ class TripDetailScreen extends StatefulWidget {
 
 class _TripDetailScreenState extends State<TripDetailScreen> {
   late Trip _trip;
+  List<Activity> _activities = []; // สมมติว่าดึงข้อมูลมาจาก DB
+  StreamSubscription<QuerySnapshot>? _activitiesSub;
 
   @override
   void initState() {
     super.initState();
     _trip = widget.trip;
+    // โหลด activities เริ่มต้นและตั้ง listener แบบ real-time
+    try {
+      _activitiesSub = FirebaseFirestore.instance
+          .collection('activities')
+          .where('tripId', isEqualTo: _trip.id.toString())
+          .orderBy('dayNumber')
+          .snapshots()
+              .listen((snapshot) {
+            print('📶 activities snapshot: ${snapshot.docs.length} docs for trip ${_trip.id}');
+            final list = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return Activity(
+            id: doc.id,
+            tripId: data['tripId'],
+            dayNumber: data['dayNumber'],
+            title: data['title'],
+            location: data['location'],
+            time: data['time'],
+          );
+        }).toList();
+
+        setState(() {
+          _activities = list;
+        });
+      });
+    } catch (e) {
+      // ignore listener errors for now
+    }
+  }
+
+  @override
+  void dispose() {
+    _activitiesSub?.cancel();
+    super.dispose();
+  }
+
+  // ฟังก์ชันคำนวณจำนวนวันทั้งหมดของทริป
+  int _calculateTotalDays() {
+    try {
+      DateFormat format = DateFormat('MMM dd, yyyy');
+      DateTime start = format.parse(_trip.startDate);
+      DateTime end = format.parse(_trip.endDate);
+      return end.difference(start).inDays + 1;
+    } catch (e) {
+      return 1;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    int totalDays = _calculateTotalDays();
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -33,13 +90,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          _trip.title,
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(_trip.title, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
           IconButton(
@@ -47,186 +98,164 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             onPressed: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => EditTripScreen(trip: _trip),
-                ),
+                MaterialPageRoute(builder: (context) => EditTripScreen(trip: _trip)),
               );
-              if (result == true) { //เอาไว้เช็คว่าผู้ใช้แก้ไขทริปสำเร็จแล้วให้ทำอะไรบางอย่าง
-                // In a real app we might reload from DB here, but for now we'd need to
-                // know how to refresh. Since we don't have a stream or similar,
-                // we'll rely on the parent to refresh when we pop, or we could reload specific trip here.
-                // For simplicity, we assume we might need to pop back to list to see changes updates fully
-                // or we could refetch the trip.
-                // Let's just setState if we had the updated object, but we don't return it yet.
+              if (result == true) {
+                // Logic สำหรับ Refresh ข้อมูล
               }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.share_outlined, color: Colors.black),
-            onPressed: () {
-              // Share functionality placeholder
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share feature coming soon!')),
-              );
             },
           ),
         ],
       ),
       body: CustomScrollView(
         slivers: [
-          // Cover Image
+          // Cover Image & Trip Info
           SliverToBoxAdapter(
-            child: Container(
-              height: 200,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.grey,
-                image: DecorationImage(
-                  image: NetworkImage(
-                    'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=1000&auto=format&fit=crop', // Placeholder
+            child: Column(
+              children: [
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.grey,
+                    image: DecorationImage(
+                      image: NetworkImage('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=1000&auto=format&fit=crop'),
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  fit: BoxFit.cover,
                 ),
-              ),
-            ),
-          ),
-
-          // Trip Info
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 20,
-                        color: Colors.blue,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _trip.destination,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 18,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${_trip.startDate} - ${_trip.endDate}',
-                        style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Weather Forecast
-          const SliverToBoxAdapter(child: WeatherForecastCard()),
-
-          // Budget Placeholder
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[200]!),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Total Budget',
-                        style: TextStyle(color: Colors.grey),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 20, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(_trip.destination, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${_trip.currency} ${_trip.budget.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Text('${_trip.startDate} - ${_trip.endDate} ($totalDays Days)',
+                              style: TextStyle(color: Colors.grey[700], fontSize: 14)),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+
+          const SliverToBoxAdapter(child: WeatherForecastCard()),
 
           // Itinerary Header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Text(
                 'Itinerary',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 20,
-                ),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
           ),
 
-          // Empty Itinerary State
-          SliverToBoxAdapter(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  children: [
-                    Icon(Icons.map_outlined, size: 48, color: Colors.grey[300]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No activities yet',
-                      style: TextStyle(color: Colors.grey[400]),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text('Start Planning'),
-                    ),
-                  ],
-                ),
-              ),
+          // สร้าง Day List อัตโนมัติ
+          SliverList(
+            key: ValueKey(_activities.length),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                int dayNumber = index + 1;
+                // กรองกิจกรรมของวันนั้นๆ
+                List<Activity> dayActivities = _activities.where((a) => a.dayNumber == dayNumber).toList();
+
+                return _buildDaySection(dayNumber, dayActivities);
+              },
+              childCount: totalDays,
             ),
           ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
       bottomNavigationBar: CustomBottomBar(
         currentIndex: 0,
         onTap: (index) {
-          if (index != 0) {
-            CustomBottomBar.navigateToIndex(context, index);
-          }
+          if (index != 0) CustomBottomBar.navigateToIndex(context, index);
         },
         variant: BottomBarVariant.material3,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () {
+          // Logic สำหรับเปิดแผนที่รวมทุกจุด
+        },
         icon: const Icon(Icons.map),
-        label: const Text('View on Map'),
+        label: const Text('View Full Map'),
         backgroundColor: Colors.black,
       ),
+    );
+  }
+
+  // Widget สำหรับแต่ละวัน
+  Widget _buildDaySection(int dayNumber, List<Activity> activities) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            title: Text('Day $dayNumber', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            trailing: IconButton(
+              icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddActivityScreen(
+                      tripId: _trip.id,
+                      dayNumber: dayNumber,
+                    ),
+                  ),
+                );
+
+                if (result == true) {
+                  // Firestore listener updates the UI automatically; show quick feedback
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Activity added')),
+                  );
+                }
+              },
+            ),
+          ),
+          if (activities.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(left: 16, bottom: 16),
+              child: Text('No activities planned yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            )
+          else
+            ...activities.map((activity) => _buildActivityItem(activity)).toList(),
+        ],
+      ),
+    );
+  }
+
+  // Widget สำหรับรายการสถานที่ในแต่ละวัน
+  Widget _buildActivityItem(Activity activity) {
+    return ListTile(
+      leading: const Icon(Icons.circle, size: 12, color: Colors.blue),
+      title: Text(activity.title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      subtitle: activity.location != null ? Text(activity.location!) : null,
+      trailing: Text(activity.time ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
     );
   }
 }
