@@ -35,49 +35,46 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
   }
 
   Future<void> _search() async {
-  setState(() {
-    _isLoading = true;
-    _error = null;
-  });
-
-  try {
-    final results = await _service.searchPlaces(
-      query: _controller.text,
-      lat: widget.lat,
-      lon: widget.lon,
-    );
-
-    if (!mounted) return; // ⭐ สำคัญ
-
     setState(() {
-      _places = results;
+      _isLoading = true;
+      _error = null;
     });
-  } catch (e) {
-    if (!mounted) return; // ⭐ สำคัญ
 
-    setState(() {
-      _error = e.toString();
-    });
-  } finally {
-    if (!mounted) return; // ⭐ สำคัญ
+    try {
+      final results = await _service.searchPlaces(
+        query: _controller.text,
+        lat: widget.lat,
+        lon: widget.lon,
+      );
 
-    setState(() {
-      _isLoading = false;
-    });
+      if (!mounted) return; // ⭐ สำคัญ
+
+      setState(() {
+        _places = results;
+      });
+    } catch (e) {
+      if (!mounted) return; // ⭐ สำคัญ
+
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (!mounted) return; // ⭐ สำคัญ
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search places'),
-      ),
+      appBar: AppBar(title: const Text('Search places')),
       bottomNavigationBar: CustomBottomBar(
-        currentIndex: 0,
+        currentIndex: 1,
         onTap: (index) {
-          if (index != 0) {
+          if (index != 1) {
             CustomBottomBar.navigateToIndex(context, index);
           }
         },
@@ -86,10 +83,7 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
       ),
       body: Column(
         children: [
-          _SearchBar(
-            controller: _controller,
-            onSearch: _search,
-          ),
+          _SearchBar(controller: _controller, onSearch: _search),
           Expanded(child: _buildBody()),
         ],
       ),
@@ -115,22 +109,20 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
         place: _places[i],
         onAdd: () {
           // TODO: wire to itinerary later
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${_places[i].name} added')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('${_places[i].name} added')));
         },
       ),
     );
   }
 }
+
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSearch;
 
-  const _SearchBar({
-    required this.controller,
-    required this.onSearch,
-  });
+  const _SearchBar({required this.controller, required this.onSearch});
 
   @override
   Widget build(BuildContext context) {
@@ -146,22 +138,18 @@ class _SearchBar extends StatelessWidget {
             icon: const Icon(Icons.filter_list),
             onPressed: onSearch,
           ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
   }
 }
+
 class _PlaceItem extends StatelessWidget {
   final Place place;
   final VoidCallback onAdd;
 
-  const _PlaceItem({
-    required this.place,
-    required this.onAdd,
-  });
+  const _PlaceItem({required this.place, required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
@@ -183,10 +171,7 @@ class _PlaceItem extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              place.category,
-              style: const TextStyle(fontSize: 12),
-            ),
+            Text(place.category, style: const TextStyle(fontSize: 12)),
             if (place.distanceKm != null)
               Text(
                 '${place.distanceKm!.toStringAsFixed(1)} km from center',
