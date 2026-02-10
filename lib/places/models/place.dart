@@ -5,6 +5,7 @@ class Place {
   final String description;
   final double lat;
   final double lon;
+  final String? country;
   final String? imageUrl;
   final double? distanceKm;
 
@@ -15,35 +16,53 @@ class Place {
     required this.description,
     required this.lat,
     required this.lon,
+    this.country,
     this.imageUrl,
     this.distanceKm,
   });
 
 
   /// ใช้ตอนดึงจาก Geoapify (Search)
+/// ใช้ตอนดึงจาก Geoapify (Search)
 factory Place.fromGeoapify(Map<String, dynamic> json) {
-    final props = json['properties'] ?? {};
-    final coords = json['geometry']['coordinates'];
+  final props = json['properties'] as Map<String, dynamic>;
 
-    final categories = (props['categories'] as List?) ?? [];
+  // 🔒 defensive: datasource ไม่ได้เป็น Map เสมอ
+  Map<String, dynamic>? raw;
+  final datasource = props['datasource'];
 
-    return Place(
-      id: props['place_id'] ??
-          props['osm_id']?.toString() ??
-          '${coords[1]}_${coords[0]}',
-      name: props['name'] ?? 'Unknown place',
-      category: categories.isNotEmpty ? categories.first : 'Unknown',
-      description: props['formatted'] ??
-          props['address_line1'] ??
-          '',
-      lat: coords[1],
-      lon: coords[0],
-      imageUrl: null,
-      distanceKm: props['distance'] != null
-          ? (props['distance'] / 1000).toDouble()
-          : null,
-    );
+  if (datasource is Map<String, dynamic>) {
+    final rawValue = datasource['raw'];
+    if (rawValue is Map<String, dynamic>) {
+      raw = rawValue;
+    }
   }
+
+  // wikipedia image (ถ้ามีจริง)
+  String? wikiImage;
+  final wiki = raw?['wikipedia'];
+  if (wiki is Map<String, dynamic>) {
+    wikiImage = wiki['image'];
+  }
+
+  return Place(
+    id: props['place_id'] ?? '',
+    name: props['name'] ?? '',
+    category: (props['categories'] as List?)?.first ?? '',
+    description: props['formatted'] ?? '',
+    lat: (props['lat'] as num).toDouble(),
+    lon: (props['lon'] as num).toDouble(),
+    country: props['country'],
+
+    // ใช้ image จาก Geoapify ก่อน ถ้าไม่มีค่อย fallback wikipedia
+    imageUrl: props['image'] ?? wikiImage,
+
+    distanceKm: props['distance'] != null
+        ? (props['distance'] as num).toDouble() / 1000
+        : null,
+  );
+}
+
 
   /// ใช้ตอน save ลง Firebase / SQLite
   Map<String, dynamic> toJson() => {
@@ -55,6 +74,7 @@ factory Place.fromGeoapify(Map<String, dynamic> json) {
         'lon': lon,
         'imageUrl': imageUrl,
         'distanceKm': distanceKm,
+        'country': country,
       };
 
   factory Place.fromJson(Map<String, dynamic> json) => Place(
@@ -64,6 +84,7 @@ factory Place.fromGeoapify(Map<String, dynamic> json) {
         description: json['description'],
         lat: json['lat'],
         lon: json['lon'],
+        country: json['country'],
         imageUrl: json['imageUrl'],
         distanceKm: json['distanceKm'],
       );

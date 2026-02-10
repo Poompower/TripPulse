@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+
 import '../models/place.dart';
+import '../../models/trip.dart';
 import '../services/places_service.dart';
+import '../../services/database_service.dart';
+
 import '../../widgets/custom_bottom_bar.dart';
+import '../widgets/search_bar_widget.dart';
+import '../widgets/place_card_widget.dart';
+import '../widgets/day_selector_bottom_sheet_widget.dart';
+import '../widgets/filter_bottom_sheet_widget.dart';
 
 class PlacesSearchScreen extends StatefulWidget {
   final String destinationName;
@@ -20,9 +28,21 @@ class PlacesSearchScreen extends StatefulWidget {
 }
 
 class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
-  final _service = PlacesService();
-  final _controller = TextEditingController();
+  final PlacesService _placesService = PlacesService();
+  final DatabaseService _databaseService = DatabaseService();
 
+  // Search attractions controller
+  final TextEditingController _searchController = TextEditingController();
+
+  // ===== Search place context =====
+  String _currentPlaceName = '';
+  double? _currentLat;
+  double? _currentLon;
+
+  // ===== Filters =====
+  Set<String> _selectedCategories = {};
+
+  // ===== UI state =====
   bool _isLoading = false;
   String? _error;
   List<Place> _places = [];
@@ -30,66 +50,170 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
   @override
   void initState() {
     super.initState();
-    _controller.text = widget.destinationName;
-    _search();
+
+    // initial context from trip destination
+    _currentPlaceName = widget.destinationName;
+    _currentLat = widget.lat;
+    _currentLon = widget.lon;
+
+    _searchController.text = '';
+    _searchPlaces();
   }
 
-  Future<void> _search() async {
+  // ==========================================================
+  // 🔍 Search place (Tokyo, Japan → geocode → lat/lon)
+  // ==========================================================
+  Future<void> _searchPlace(String placeName) async {
+    if (placeName.trim().isEmpty) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final results = await _service.searchPlaces(
-        query: _controller.text,
-        lat: widget.lat,
-        lon: widget.lon,
-      );
+      final result = await _placesService.geocodePlace(placeName);
 
-      if (!mounted) return; // ⭐ สำคัญ
+      if (!mounted) return;
 
       setState(() {
-        _places = results;
+        _currentPlaceName = placeName;
+        _currentLat = result.lat;
+        _currentLon = result.lon;
       });
-    } catch (e) {
-      if (!mounted) return; // ⭐ สำคัญ
 
+      // after geocode → reload attractions
+      await _searchPlaces();
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = 'Place not found';
       });
     } finally {
-      if (!mounted) return; // ⭐ สำคัญ
-
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Search places')),
-      bottomNavigationBar: CustomBottomBar(
-        currentIndex: 1,
-        onTap: (index) {
-          if (index != 1) {
-            CustomBottomBar.navigateToIndex(context, index);
-          }
+  // ==========================================================
+  // 🔎 Search attractions (radius 5000, category filter)
+  // ==========================================================
+  Future<void> _searchPlaces() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final results = await _placesService.searchPlaces(
+        query: _searchController.text,
+        lat: _currentLat,
+        lon: _currentLon,
+        categories:
+            _selectedCategories.isNotEmpty ? _selectedCategories.toList() : null,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _places = results;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // ==========================================================
+  // 🏷 Open filter bottom sheet
+  // ==========================================================
+  Future<void> _openFilter() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => FilterBottomSheetWidget(
+        selectedCategories: _selectedCategories,
+        onApplyFilters: (categories) {
+          setState(() {
+            _selectedCategories = categories;
+          });
+          _searchPlaces();
         },
-        variant: BottomBarVariant.material3,
-        showLabels: true,
-      ),
-      body: Column(
-        children: [
-          _SearchBar(controller: _controller, onSearch: _search),
-          Expanded(child: _buildBody()),
-        ],
       ),
     );
   }
 
+  // ==========================================================
+  // ➕ Add Place → Select Trip → Select Day
+  // ==========================================================
+  Future<void> _onAddPlace(Place place) async {
+    final trips = await _databaseService.trips();
+    if (!mounted) return;
+
+    final placeCountry = place.country?.toLowerCase();
+
+    if (placeCountry == null || placeCountry.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot determine country for this place')),
+      );
+      return;
+    }
+
+    // filter trip by country (Japan-level)
+    final matchedTrips = trips.where((trip) {
+      return trip.destination.toLowerCase().contains(placeCountry);
+    }).toList();
+
+    if (matchedTrips.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No trips match this place country')),
+      );
+      return;
+    }
+
+    // select trip
+    final Trip? selectedTrip = await showModalBottomSheet<Trip>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) {
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: matchedTrips.map((trip) {
+            return ListTile(
+              title: Text(trip.title),
+              subtitle: Text(trip.destination),
+              onTap: () => Navigator.pop(context, trip),
+            );
+          }).toList(),
+        );
+      },
+    );
+
+    if (selectedTrip == null || !mounted) return;
+
+    // select day (real insert)
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => DaySelectorBottomSheetWidget(
+        place: place,
+        trip: selectedTrip,
+      ),
+    );
+  }
+
+  // ==========================================================
+  // UI helpers
+  // ==========================================================
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -105,84 +229,83 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
 
     return ListView.builder(
       itemCount: _places.length,
-      itemBuilder: (_, i) => _PlaceItem(
-        place: _places[i],
-        onAdd: () {
-          // TODO: wire to itinerary later
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('${_places[i].name} added')));
-        },
-      ),
+      itemBuilder: (_, index) {
+        final place = _places[index];
+        return PlaceCardWidget(
+          place: place,
+          onTap: () {
+            // future: place detail
+          },
+          onAdd: () => _onAddPlace(place),
+        );
+      },
     );
   }
-}
 
-class _SearchBar extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback onSearch;
-
-  const _SearchBar({required this.controller, required this.onSearch});
-
+  // ==========================================================
+  // Build
+  // ==========================================================
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: TextField(
-        controller: controller,
-        onSubmitted: (_) => onSearch(),
-        decoration: InputDecoration(
-          hintText: 'Search attractions',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: onSearch,
-          ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceItem extends StatelessWidget {
-  final Place place;
-  final VoidCallback onAdd;
-
-  const _PlaceItem({required this.place, required this.onAdd});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: ListTile(
-        leading: place.imageUrl != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  place.imageUrl!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_currentPlaceName.isNotEmpty
+            ? 'Places in $_currentPlaceName'
+            : 'Search Places'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.public),
+            tooltip: 'Search place',
+            onPressed: () {
+              final controller = TextEditingController();
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Search place'),
+                  content: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. Tokyo, Japan',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _searchPlace(controller.text);
+                      },
+                      child: const Text('Search'),
+                    ),
+                  ],
                 ),
-              )
-            : const Icon(Icons.place, size: 40),
-        title: Text(place.name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(place.category, style: const TextStyle(fontSize: 12)),
-            if (place.distanceKm != null)
-              Text(
-                '${place.distanceKm!.toStringAsFixed(1)} km from center',
-                style: const TextStyle(fontSize: 12),
-              ),
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.add_circle, color: Colors.blue),
-          onPressed: onAdd,
-        ),
+              );
+            },
+          ),
+        ],
+      ),
+      bottomNavigationBar: CustomBottomBar(
+        currentIndex: 1,
+        onTap: (index) {
+          if (index != 1) {
+            CustomBottomBar.navigateToIndex(context, index);
+          }
+        },
+        variant: BottomBarVariant.material3,
+        showLabels: true,
+      ),
+      body: Column(
+        children: [
+          SearchBarWidget(
+            controller: _searchController,
+            onSearch: _searchPlaces,
+            onOpenFilter: _openFilter,
+          ),
+          Expanded(child: _buildBody()),
+        ],
       ),
     );
   }
