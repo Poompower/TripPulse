@@ -1,14 +1,44 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'database_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseService _dbService = DatabaseService();
+  
+  // 1. ประกาศตัวแปร _googleSignIn ไว้ที่นี่ (เพื่อให้เรียกใช้ได้ทั้งใน signIn และ signOut)
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // ตรวจสอบสถานะการ Login
   Stream<User?> get userStatus => _auth.authStateChanges();
 
-  // สมัครสมาชิกด้วย Email
+  // ฟังก์ชัน Login ด้วย Google
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      // 2. แก้จุดนี้: ต้องใช้ตัวแปร _googleSignIn และตามด้วยคำสั่ง .signIn()
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) return null;
+
+      // 3. ขอ Authentication Token
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // 4. สร้าง Credential (T ตัวใหญ่ที่ accessToken และ idToken)
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // 5. Login เข้า Firebase
+      return await _auth.signInWithCredential(credential);
+    } catch (e) {
+      print("Google Sign-In Error: $e");
+      return null;
+    }
+  }
+
+  // --- ส่วนของ SignUp / SignIn / SignOut (ใช้ตัวแปร _googleSignIn ที่ประกาศไว้) ---
+
   Future<String?> signUp({
     required String email, 
     required String password,
@@ -17,17 +47,12 @@ class AuthService {
     required String phone,
   }) async {
     try {
-      // 1. เช็คเบอร์โทรซ้ำก่อน
       bool isPhoneDuplicate = await _dbService.checkPhoneDuplicate(phone);
-      if (isPhoneDuplicate) {
-        return 'เบอร์โทรศัพท์นี้ถูกใช้งานไปแล้ว'; // คืนค่า Error กลับไป
-      }
+      if (isPhoneDuplicate) return 'เบอร์โทรศัพท์นี้ถูกใช้งานไปแล้ว';
 
-      // 2. สร้างบัญชีผ่าน Firebase Auth
       UserCredential result = await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
           
-      // 3. บันทึกข้อมูลลง Database
       if (result.user != null) {
         await _dbService.saveUser(
           uid: result.user!.uid,
@@ -36,26 +61,17 @@ class AuthService {
           lastName: lastName,
           phone: phone,
         );
-        return null; // สมัครสำเร็จ ไม่มี Error
+        return null; 
       }
-      return 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
-      
+      return 'เกิดข้อผิดพลาด';
     } on FirebaseAuthException catch (e) {
-      // ดักจับ Error จาก Firebase Auth (เช่น อีเมลซ้ำ)
-      if (e.code == 'email-already-in-use') {
-        return 'อีเมลนี้ถูกลงทะเบียนไปแล้ว';
-      } else if (e.code == 'weak-password') {
-        return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
-      } else if (e.code == 'invalid-email') {
-        return 'รูปแบบอีเมลไม่ถูกต้อง';
-      }
+      if (e.code == 'email-already-in-use') return 'อีเมลนี้ถูกลงทะเบียนไปแล้ว';
       return e.message;
     } catch (e) {
-      return 'เกิดข้อผิดพลาด: $e';
+      return e.toString();
     }
   }
 
-  // เข้าสู่ระบบด้วย Email
   Future<User?> signIn(String email, String password) async {
     try {
       UserCredential result = await _auth.signInWithEmailAndPassword(
@@ -66,6 +82,9 @@ class AuthService {
     }
   }
 
-  // ออกจากระบบ
-  Future<void> signOut() async => await _auth.signOut();
+  Future<void> signOut() async {
+    // 6. เรียกใช้ตัวแปรที่ประกาศไว้ข้างบน
+    await _googleSignIn.signOut(); 
+    await _auth.signOut();
+  }
 }

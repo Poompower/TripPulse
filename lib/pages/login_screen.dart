@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'complete_profile_screen.dart'; 
+import '../services/database_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -81,15 +83,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildGoogleButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: OutlinedButton.icon(
-        onPressed: () {}, // เชื่อมต่อ Google Sign In ที่นี่
-        icon: const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
-        label: const Text('Continue with Google', style: TextStyle(color: Colors.black, fontSize: 16)),
-        style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-      ),
-    );
-  }
+  return SizedBox(
+    width: double.infinity,
+    height: 55,
+    child: OutlinedButton.icon(
+      onPressed: () async {
+        // 1. เรียกใช้งาน Google Sign In
+        final credential = await _auth.signInWithGoogle();
+        
+        if (credential != null && credential.user != null) {
+          // 2. เช็คว่าเคยกรอกข้อมูลหรือยัง
+          bool isComplete = await DatabaseService().checkUserProfileComplete(credential.user!.uid);
+          
+          if (!mounted) return;
+
+          if (isComplete) {
+            // เคยกรอกแล้ว เข้าแอปได้เลย
+            Navigator.pushReplacementNamed(context, '/trip-list-screen');
+          } else {
+            // ยังไม่เคยกรอก ส่งไปหน้า Complete Profile
+            Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (_) => CompleteProfileScreen(user: credential.user!))
+            );
+          }
+        }
+      },
+      icon: const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
+      label: const Text('Continue with Google', style: TextStyle(color: Colors.black, fontSize: 16)),
+      style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+    ),
+  );
+}
 }

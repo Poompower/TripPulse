@@ -217,4 +217,17 @@ class DatabaseService {
 
     await _db.collection('users').doc(uid).update({'photoBase64': base64Image});
   }
+  Future<bool> checkUserProfileComplete(String uid) async {
+    try {
+      DocumentSnapshot doc = await _db.collection('users').doc(uid).get();
+      // ถ้ามีเอกสาร และ มีฟิลด์ phone แปลว่าเคยสมัครสมบูรณ์แล้ว
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data.containsKey('phone') && data['phone'].toString().isNotEmpty;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }
