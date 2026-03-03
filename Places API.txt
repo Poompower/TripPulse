@@ -1,0 +1,1046 @@
+Places API
+The Places API is a powerful tool that enables you to query local points of interest and amenities effortlessly. You can easily search for places in a city, within a specified radius of a point, within a reachability area or isoline, or even within a bounding box.
+
+The Places API lets you conveniently query places by category, including accommodations, shops, parking, and much more. We've also included customizable conditions that allow you to apply additional filters, such as free access, availability of Wi-Fi, and wheelchair accessibility.
+
+To experience the full capabilities of the Places API, we invite you to try it out in the API Playground. Play around with the different features and see how easy it is to find the necessary information.
+
+Places API Live Demo
+
+Authentication and Geocoding API key
+API reference
+Supported categories
+Supported conditions
+Pricing
+Authentication and API key
+You'll need an API key to use the Places API. However, obtaining one is quick, easy, and free of charge, and you don't even need a credit card to get started! Our free plan includes up to 3000 requests per day, making it an excellent option for developers who want to test out our service. For more information on our different pricing plans, we recommend visiting our Pricing page to find the best option for your needs.
+
+How to get Places API key
+To get your Places API key, follow these steps:
+
+Register on the Geoapify MyProjects page.
+Create a new project.
+Go to the API Keys section, where one API key is generated automatically. You can generate multiple API keys per project if needed.
+You can also protect your API key by listing allowed IP addresses, HTTP referrers, origins, and CORS for added security.
+
+Moreover, you can generate a code to call the API. Choose "Places API" and select an API key to receive a URL and programming code. Press the "Try" button to execute the API call and receive the result object.
+
+API reference
+The Places API is a versatile tool that enables you to retrieve information on various locations, points of interest, and places belonging to different categories.
+
+To use the Places API, you'll need to make HTTP GET requests. These requests allow you to retrieve data related to your queries and integrate it into your application or service.
+
+API URL
+https://api.geoapify.com/v2/places?PARAMS
+
+Request parameters
+Request parameters
+Use this checklist when building a request:
+
+Required: always include your API key and at least one category.
+Optional: language, bias, and paging controls tailor the response to your needs.
+Filters & bias: choose one or combine them to focus the search area.
+Core parameters
+Name	Required	Description	Example
+apiKey	Required	API key for authentication	apiKey=YOUR_API_KEY
+categories	Required	Primary place categories. See supported categories.	categories=commercial.supermarket
+conditions	Optional	Additional filters such as accessibility or amenities. See supported conditions.	conditions=wheelchair.yes
+filter	Optional	Spatial filters that constrain the search area. See the table below.	filter=rect:-89.1,39.66,-88.39,40.38
+bias	Optional	Prioritises results near a location without excluding others. Supports proximity, circle, and rectangle.	bias=proximity:-73.99,40.77
+limit	Optional	Maximum number of results per page.	limit=20
+offset	Optional	Start index for pagination (use with limit).	offset=40
+lang	Optional	Response language as an ISO 639-1 code.	lang=en
+name	Optional	Returns places matching a given name.	name=Starbucks
+Add at least one spatial control—either a filter or a bias—so the API knows where to look for places.
+
+Filters
+Filter	Format	Description	Example
+Circle	circle:lon,lat,radiusMeters	Results inside a circle	filter=circle:-87.770231,41.878968,5000
+Rectangle	rect:lon1,lat1,lon2,lat2	Results inside a bounding box	filter=rect:-89.097540,39.668983,-88.399274,40.383412
+Geometry	geometry:geometryId	Re-use a previously generated geometry (e.g. isoline)	filter=geometry:d3046cf911d4d8bb8dd99394ef0921fb
+Place	place:placeId	Boundary returned by Geoapify APIs (city, district, postcode, etc.)	filter=place:51f07665660fc4024059dc0a96dfac6c...
+Country (coming soon)	countrycode:code1,code2	ISO 3166-1 alpha-2 country codes (auto detects by IP)	filter=countrycode:de,es,fr
+Bias
+Bias	Format	Description	Example
+Proximity	bias=proximity:lon,lat	Orders results by distance from the location	bias=proximity:41.2257145,52.971411
+Circle	bias=circle:lon,lat,radiusMeters	Boosts results within a circle	bias=circle:-73.99,40.77,1500
+Rectangle	bias=rect:lon1,lat1,lon2,lat2	Boosts results within a bounding box	bias=rect:-73.9933,40.7713,-73.9722,40.7571
+Response Object
+The Place API response contains a GeoJSON FeatureCollection object. Each feature in this object has a "Point" type and represents a specific location or point of interest.
+
+In addition to the location data, each feature contains properties that provide additional information about the location. These properties can include names, addresses, categories, and more. By accessing these properties, you can extract the most relevant information to your application and use it to enhance the user experience.
+
+Name	Description
+name	Location name
+country	Country component of an address
+state	State component of an address
+postcode	Postcode or ZIP code of an address
+city	City component of an address
+street	Street component of an address
+housenumber	House number component of an address
+lat, lon	Coordinates of the location
+formatted	Display address
+address_line1	Main part of the display address, contains building street and house number or amenity name
+address_line2	The second part of the display address, contains address parts not included to address_line1
+categories	All categories, that the places belongs to. Can take values of supported categories and supported conditions
+distance	Distance in meters to the biased location
+place_id	Unique identifier for the place, that can be used to extract additional information about the place with Place Details API
+Supported categories
+The Places API uses a hierarchical category system to allow you to specify the type of locations you want to retrieve. By using more specific category keys, you can narrow down your results to a specific type of location, while more general category keys will return a broader range of results.
+
+For example, if you want to retrieve only motels, you can use the "accommodation.motel" key. If you want to retrieve all types of accommodations, including subcategories such as "accommodation.hut", "accommodation.apartment", and "accommodation.chalet", you can use the "accommodation" key.
+
+Our list of categories is constantly expanding and evolving. If you cannot find a required category in the current list, please contact us at info@geoapify.com and we will be happy to assist you in finding the category you need.
+
+Use the sections below to explore categories grouped by their top-level key. Each table lists the values you can pass in the categories parameter.
+
+Accommodation
+Key	Description
+accommodation	Place to stay or live
+accommodation.apartment	
+accommodation.chalet	
+accommodation.guest_house	
+accommodation.hostel	
+accommodation.hotel	
+accommodation.hut	
+accommodation.motel	
+Activity
+Key	Description
+activity	Clubs, community centers
+activity.community_center	
+activity.sport_club	
+Airport
+Key	Description
+airport	Facility for aircraft operations, including takeoffs, landings, and maintenance
+airport.airfield	Area for aircraft operations, can range from simple to complex facilities
+airport.gliding	Designed for glider operations, may include winches or tow planes
+airport.international	Handles international flights with customs and immigration facilities
+airport.military	Dedicated to armed forces use
+airport.private	Owned by individuals or entities, not open to the public, for private aviation
+Commercial
+Key	Description
+commercial	Places where one can buy or sell things
+commercial.agrarian	
+commercial.antiques	
+commercial.art	
+commercial.baby_goods	
+commercial.bag	
+commercial.books	
+commercial.chemist	
+commercial.clothing	
+commercial.clothing.accessories	
+commercial.clothing.clothes	
+commercial.clothing.kids	
+commercial.clothing.men	
+commercial.clothing.shoes	
+commercial.clothing.sport	
+commercial.clothing.underwear	
+commercial.clothing.women	
+commercial.convenience	
+commercial.department_store	
+commercial.discount_store	
+commercial.elektronics	
+commercial.energy	
+commercial.erotic	
+commercial.florist	
+commercial.food_and_drink	
+commercial.food_and_drink.bakery	
+commercial.food_and_drink.butcher	
+commercial.food_and_drink.cheese_and_dairy	
+commercial.food_and_drink.chocolate	
+commercial.food_and_drink.coffee_and_tea	
+commercial.food_and_drink.confectionery	
+commercial.food_and_drink.deli	
+commercial.food_and_drink.drinks	
+commercial.food_and_drink.farm	
+commercial.food_and_drink.frozen_food	
+commercial.food_and_drink.fruit_and_vegetable	
+commercial.food_and_drink.health_food	
+commercial.food_and_drink.honey	
+commercial.food_and_drink.ice_cream	
+commercial.food_and_drink.nuts	
+commercial.food_and_drink.organic	
+commercial.food_and_drink.pasta	
+commercial.food_and_drink.rice	
+commercial.food_and_drink.seafood	
+commercial.food_and_drink.spices	
+commercial.furniture_and_interior	
+commercial.furniture_and_interior.bathroom	
+commercial.furniture_and_interior.bed	
+commercial.furniture_and_interior.carpet	
+commercial.furniture_and_interior.curtain	
+commercial.furniture_and_interior.kitchen	
+commercial.furniture_and_interior.lighting	
+commercial.garden	
+commercial.gas	
+commercial.gift_and_souvenir	
+commercial.health_and_beauty	
+commercial.health_and_beauty.cosmetics	
+commercial.health_and_beauty.hearing_aids	
+commercial.health_and_beauty.herbalist	
+commercial.health_and_beauty.medical_supply	
+commercial.health_and_beauty.optician	
+commercial.health_and_beauty.pharmacy	
+commercial.health_and_beauty.wigs	
+commercial.hobby	
+commercial.hobby.anime	
+commercial.hobby.art	
+commercial.hobby.brewing	
+commercial.hobby.collecting	
+commercial.hobby.games	
+commercial.hobby.model	
+commercial.hobby.music	
+commercial.hobby.photo	
+commercial.hobby.sewing_and_knitting	
+commercial.houseware_and_hardware	
+commercial.houseware_and_hardware.building_materials	
+commercial.houseware_and_hardware.building_materials.doors	
+commercial.houseware_and_hardware.building_materials.flooring	
+commercial.houseware_and_hardware.building_materials.glaziery	
+commercial.houseware_and_hardware.building_materials.paint	
+commercial.houseware_and_hardware.building_materials.tiles	
+commercial.houseware_and_hardware.building_materials.windows	
+commercial.houseware_and_hardware.doityourself	
+commercial.houseware_and_hardware.fireplace	
+commercial.houseware_and_hardware.hardware_and_tools	
+commercial.houseware_and_hardware.swimming_pool	
+commercial.jewelry	
+commercial.kiosk	
+commercial.marketplace	
+commercial.newsagent	
+commercial.outdoor_and_sport	
+commercial.outdoor_and_sport.bicycle	
+commercial.outdoor_and_sport.diving	
+commercial.outdoor_and_sport.fishing	
+commercial.outdoor_and_sport.golf	
+commercial.outdoor_and_sport.hunting	
+commercial.outdoor_and_sport.ski	
+commercial.outdoor_and_sport.water_sports	
+commercial.pet	
+commercial.pyrotechnics	
+commercial.second_hand	
+commercial.shopping_mall	
+commercial.smoking	
+commercial.stationery	
+commercial.supermarket	
+commercial.tickets_and_lottery	
+commercial.toy_and_game	
+commercial.trade	
+commercial.vehicle	
+commercial.video_and_music	
+commercial.watches	
+commercial.weapons	
+commercial.wedding	
+Catering
+Key	Description
+catering	Places of public catering: restaurants, cafes, bars, etc.
+catering.bar	
+catering.biergarten	
+catering.cafe	
+catering.cafe.bubble_tea	
+catering.cafe.cake	
+catering.cafe.coffee	
+catering.cafe.coffee_shop	
+catering.cafe.crepe	
+catering.cafe.dessert	
+catering.cafe.donut	
+catering.cafe.frozen_yogurt	
+catering.cafe.ice_cream	
+catering.cafe.tea	
+catering.cafe.waffle	
+catering.fast_food	
+catering.fast_food.burger	
+catering.fast_food.fish_and_chips	
+catering.fast_food.hot_dog	
+catering.fast_food.kebab	
+catering.fast_food.noodle	
+catering.fast_food.pita	
+catering.fast_food.pizza	
+catering.fast_food.ramen	
+catering.fast_food.salad	
+catering.fast_food.sandwich	
+catering.fast_food.soup	
+catering.fast_food.tacos	
+catering.fast_food.tapas	
+catering.fast_food.wings	
+catering.food_court	
+catering.ice_cream	
+catering.pub	
+catering.restaurant	
+catering.restaurant.afghan	
+catering.restaurant.african	
+catering.restaurant.american	
+catering.restaurant.arab	
+catering.restaurant.argentinian	
+catering.restaurant.asian	
+catering.restaurant.austrian	
+catering.restaurant.balkan	
+catering.restaurant.barbecue	
+catering.restaurant.bavarian	
+catering.restaurant.beef_bowl	
+catering.restaurant.belgian	
+catering.restaurant.bolivian	
+catering.restaurant.brazilian	
+catering.restaurant.burger	
+catering.restaurant.caribbean	
+catering.restaurant.chicken	
+catering.restaurant.chili	
+catering.restaurant.chinese	
+catering.restaurant.croatian	
+catering.restaurant.cuban	
+catering.restaurant.curry	
+catering.restaurant.czech	
+catering.restaurant.danish	
+catering.restaurant.dumpling	
+catering.restaurant.ethiopian	
+catering.restaurant.european	
+catering.restaurant.filipino	
+catering.restaurant.fish	
+catering.restaurant.fish_and_chips	
+catering.restaurant.french	
+catering.restaurant.friture	
+catering.restaurant.georgian	
+catering.restaurant.german	
+catering.restaurant.greek	
+catering.restaurant.hawaiian	
+catering.restaurant.hungarian	
+catering.restaurant.indian	
+catering.restaurant.indonesian	
+catering.restaurant.international	
+catering.restaurant.irish	
+catering.restaurant.italian	
+catering.restaurant.jamaican	
+catering.restaurant.japanese	
+catering.restaurant.kebab	
+catering.restaurant.korean	
+catering.restaurant.latin_american	
+catering.restaurant.lebanese	
+catering.restaurant.malay	
+catering.restaurant.malaysian	
+catering.restaurant.mediterranean	
+catering.restaurant.mexican	
+catering.restaurant.moroccan	
+catering.restaurant.nepalese	
+catering.restaurant.noodle	
+catering.restaurant.oriental	
+catering.restaurant.pakistani	
+catering.restaurant.persian	
+catering.restaurant.peruvian	
+catering.restaurant.pita	
+catering.restaurant.pizza	
+catering.restaurant.portuguese	
+catering.restaurant.ramen	
+catering.restaurant.regional	
+catering.restaurant.russian	
+catering.restaurant.sandwich	
+catering.restaurant.seafood	
+catering.restaurant.soup	
+catering.restaurant.spanish	
+catering.restaurant.steak_house	
+catering.restaurant.sushi	
+catering.restaurant.swedish	
+catering.restaurant.syrian	
+catering.restaurant.tacos	
+catering.restaurant.taiwanese	
+catering.restaurant.tapas	
+catering.restaurant.tex-mex	
+catering.restaurant.thai	
+catering.restaurant.turkish	
+catering.restaurant.ukrainian	
+catering.restaurant.uzbek	
+catering.restaurant.vietnamese	
+catering.restaurant.western	
+catering.restaurant.wings	
+catering.taproom	Place where you can sample draught cask beer
+Emergency
+Key	Description
+emergency	General category for emergency-related infrastructure
+emergency.access_point	Marked access point for rescue or emergency services
+emergency.air_rescue_service	Air rescue service base (helicopter/air ambulance)
+emergency.ambulance_station	Base for ambulances and emergency medical response teams
+emergency.assembly_point	Safe meeting area designated for people to gather during emergencies
+emergency.bleed_control_kit	Bleed control kit for severe hemorrhage management
+emergency.control_centre	Emergency control center for coordination and dispatch
+emergency.defibrillator	AED (Automated External Defibrillator) for cardiac emergencies
+emergency.disaster_help_point	Designated disaster help/assembly point
+emergency.disaster_response	Disaster response coordination site or depot
+emergency.drinking_water	Emergency drinking water supply point
+emergency.dry_riser_inlet	Dry riser inlet connection for firefighters
+emergency.emergency_ward_entrance	Entrance to a hospital emergency department
+emergency.fire_alarm_box	Manual fire alarm call point (alarm box)
+emergency.fire_detection_system	Fire detection or alarm system components
+emergency.fire_extinguisher	Portable device used to put out small fires
+emergency.fire_flapper	Fire beater/flapper tool station for wildfire control
+emergency.fire_hose	Fixed fire hose or hose reel for firefighting
+emergency.fire_hydrant	Device that provides water supply for firefighting
+emergency.fire_lookout	Fire lookout tower or observation point
+emergency.fire_service_inlet	Inlet connection for fire services to pump water into a building system
+emergency.fire_water_pond	Pond or reservoir reserved for firefighting water supply
+emergency.first_aid	First aid station providing immediate medical assistance
+emergency.first_aid_kit	First aid kit location with basic medical supplies
+emergency.key_depot	Key depot/safe for emergency access keys
+emergency.landing_site	Designated landing site for emergency services (often helicopter)
+emergency.life_ring	Life ring or buoy station for water rescue
+emergency.lifeguard	Lifeguard post for rescue and supervision
+emergency.lifeguard_base	Main base for lifeguard services
+emergency.marine_rescue	Marine rescue service station
+emergency.mountain_rescue	Mountain rescue base or hut
+emergency.phone	Emergency telephone for immediate communication with authorities
+emergency.rescue_box	Rescue equipment box with emergency tools
+emergency.siren	Warning siren for civil defense and emergency alerts
+emergency.slipway	Slipway used for launching rescue boats
+emergency.suction_point	Designated spot where fire trucks can extract water, e.g., from ponds
+emergency.water_rescue	Water rescue service base or station
+emergency.water_tank	Storage tank for emergency water supply, especially for firefighting
+Education
+Key	Description
+education	Place that provides learning spaces and learning environments
+education.college	
+education.driving_school	
+education.language_school	
+education.library	
+education.music_school	
+education.school	
+education.university	
+Childcare
+Key	Description
+childcare	Place that provides care of children service while parents are working
+childcare.kindergarten	
+Entertainment
+Key	Description
+entertainment	Place that where one can spend free time with amusement
+entertainment.activity_park	
+entertainment.activity_park.climbing	
+entertainment.activity_park.trampoline	
+entertainment.amusement_arcade	
+entertainment.aquarium	
+entertainment.bowling_alley	
+entertainment.cinema	
+entertainment.culture	
+entertainment.culture.arts_centre	
+entertainment.culture.gallery	
+entertainment.culture.theatre	
+entertainment.escape_game	
+entertainment.flying_fox	
+entertainment.miniature_golf	
+entertainment.museum	
+entertainment.planetarium	
+entertainment.theme_park	
+entertainment.water_park	
+entertainment.zoo	
+Healthcare
+Key	Description
+healthcare	Places that provides healthcare services: hospitals, clinics and more
+healthcare.clinic_or_praxis	
+healthcare.clinic_or_praxis.allergology	
+healthcare.clinic_or_praxis.cardiology	
+healthcare.clinic_or_praxis.dermatology	
+healthcare.clinic_or_praxis.endocrinology	
+healthcare.clinic_or_praxis.gastroenterology	
+healthcare.clinic_or_praxis.general	
+healthcare.clinic_or_praxis.gynaecology	
+healthcare.clinic_or_praxis.occupational	
+healthcare.clinic_or_praxis.ophthalmology	
+healthcare.clinic_or_praxis.orthopaedics	
+healthcare.clinic_or_praxis.otolaryngology	
+healthcare.clinic_or_praxis.paediatrics	
+healthcare.clinic_or_praxis.psychiatry	
+healthcare.clinic_or_praxis.pulmonology	
+healthcare.clinic_or_praxis.radiology	
+healthcare.clinic_or_praxis.rheumatology	
+healthcare.clinic_or_praxis.trauma	
+healthcare.clinic_or_praxis.urology	
+healthcare.clinic_or_praxis.vascular_surgery	
+healthcare.dentist	
+healthcare.dentist.orthodontics	
+healthcare.hospital	
+healthcare.pharmacy	
+Heritage
+Key	Description
+heritage	
+heritage.unesco	
+Highway
+Key	Description
+highway	Roads, varying from small roads to major routes.
+highway.busway	Dedicated lanes or roads for bus traffic, often in urban areas
+highway.cycleway	Designated paths for bicycles, separate from vehicular traffic lanes
+highway.footway	Paths designated for pedestrian use only, no vehicular traffic
+highway.living_street	Roads with very low speed limits, prioritizing pedestrians and cyclists
+highway.motorway	High-capacity roads for fast, long-distance travel with controlled access
+highway.motorway.junction	Intersections or exits on motorways, often with ramps
+highway.motorway.link	Ramps or roads connecting to or from a motorway
+highway.path	General paths for walking, cycling, and sometimes equestrian use
+highway.pedestrian	Areas primarily intended for pedestrian traffic, often in commercial zones
+highway.primary	Major roads connecting large towns or cities, important for regional traffic
+highway.primary.link	Short connectors between primary roads and other road types
+highway.public	Roads open to the general public, encompassing a wide range of types
+highway.residential	Roads within residential areas, primarily for local access
+highway.secondary	Roads connecting smaller towns, less important than primary roads
+highway.secondary.link	Connectors between secondary roads and adjacent road types
+highway.service	Roads providing access to buildings, service areas, or other facilities
+highway.tertiary	Roads linking villages and local centers, less traffic than secondary roads
+highway.tertiary.link	Small connectors between tertiary roads and other roads
+highway.track	Unpaved or rough paths primarily used for agricultural or forestry purposes
+highway.trunk	Major roads with high traffic volume, often linking major cities
+highway.trunk.link	Ramps or links between trunk roads and other types
+Leisure
+Key	Description
+leisure	Places where one can relax and unwind
+leisure.park	
+leisure.park.garden	
+leisure.park.nature_reserve	
+leisure.picnic	
+leisure.picnic.bbq	
+leisure.picnic.picnic_site	
+leisure.picnic.picnic_table	
+leisure.playground	
+leisure.spa	
+leisure.spa.public_bath	
+leisure.spa.sauna	
+Man made
+Key	Description
+man_made	The man-made category is used to identify anything that was constructed by humans
+man_made.breakwater	
+man_made.bridge	
+man_made.lighthouse	
+man_made.pier	
+man_made.tower	
+man_made.water_tower	
+man_made.watermill	
+man_made.windmill	
+Natural
+Key	Description
+natural	Places where one can enjoy nature, explore natural phenomena
+natural.forest	
+natural.mountain	
+natural.mountain.cave_entrance	
+natural.mountain.cliff	
+natural.mountain.glacier	
+natural.mountain.peak	
+natural.mountain.rock	
+natural.protected_area	
+natural.sand	
+natural.sand.dune	
+natural.water	
+natural.water.geyser	
+natural.water.hot_spring	
+natural.water.reef	
+natural.water.sea	
+natural.water.spring	
+National park
+Key	Description
+national_park	National parks
+Office
+Key	Description
+office	An office of a business, company, administration, or organization
+office.accountant	
+office.advertising_agency	
+office.architect	
+office.association	
+office.charity	
+office.company	
+office.consulting	
+office.coworking	
+office.diplomatic	
+office.educational_institution	
+office.employment_agency	
+office.energy_supplier	
+office.estate_agent	
+office.financial	
+office.financial_advisor	
+office.forestry	
+office.foundation	
+office.government	
+office.government.administrative	
+office.government.agriculture	
+office.government.cadaster	
+office.government.customs	
+office.government.education	
+office.government.environment	
+office.government.forestry	
+office.government.healthcare	
+office.government.legislative	
+office.government.migration	
+office.government.ministry	
+office.government.prosecutor	
+office.government.public_service	
+office.government.register_office	
+office.government.social_security	
+office.government.social_services	
+office.government.tax	
+office.government.transportation	
+office.insurance	
+office.it	
+office.lawyer	
+office.logistics	
+office.newspaper	
+office.non_profit	
+office.notary	
+office.political_party	
+office.religion	
+office.research	
+office.security	
+office.tax_advisor	
+office.telecommunication	
+office.travel_agent	
+office.water_utility	
+Parking
+Key	Description
+parking	Places where one can park a car
+parking.bicycles	
+parking.cars	
+parking.cars.multistorey	
+parking.cars.rooftop	
+parking.cars.surface	
+parking.cars.underground	
+parking.motorcycle	
+parking.multistorey	
+parking.rooftop	
+parking.surface	
+parking.underground	
+Pet
+Key	Description
+pet	Places that can be interesting for pet owners
+pet.crematorium	Crematoria dedicated to pets
+pet.dog_park	
+pet.service	
+pet.shop	
+pet.veterinary	
+Power
+Key	Description
+power	Infrastructure related to the generation and distribution of electrical energy
+power.generator	Facilities where electrical power is generated from various energy sources
+power.generator.biomass	
+power.generator.coal	
+power.generator.gas	
+power.generator.geothermal	
+power.generator.hydro	
+power.generator.nuclear	
+power.generator.oil	
+power.generator.solar	
+power.generator.wind	
+power.line	High-voltage transmission lines for distributing electricity over long distances
+power.minor_line	Smaller power lines for local electricity distribution, often within neighborhoods
+power.plant	Industrial facilities where electrical power is generated from various energy sources.
+power.plant.biomass	
+power.plant.coal	
+power.plant.gas	
+power.plant.geothermal	
+power.plant.hydro	
+power.plant.nuclear	
+power.plant.oil	
+power.plant.solar	
+power.plant.waste	
+power.plant.wind	
+power.substation	Facilities that transform voltage levels for distribution and transmission of electricity
+power.transformer	Devices within power systems that change the voltage level of electricity for distribution
+Production
+Key	Description
+production	Sites and facilities where goods and products are manufactured or processed
+production.brewery	Establishments where beer is produced through the fermentation of ingredients
+production.cheese	Facilities specialized in the production and aging of various types of cheese
+production.factory	Large industrial buildings where raw materials are transformed into finished goods
+production.pottery	Workshops or factories where clay products, such as pottery and ceramics, are made
+production.winery	Facilities dedicated to the production of wine, from grape processing to bottling
+Railway
+Key	Description
+railway	Tracks and infrastructure for train transportation and services
+railway.construction	Railway tracks and infrastructure currently under construction
+railway.funicular	Railways on steep slopes using cable traction for uphill and downhill travel
+railway.light_rail	Urban rail systems that are lighter and faster than traditional trams
+railway.subway	Urban, underground railway systems for mass transit
+railway.surface	Railways located at ground level, including most conventional train tracks
+railway.train	Tracks used by conventional overground trains for passenger and freight services
+railway.tram	City-based light rail systems running on streets and dedicated lines
+railway.underground	Railways located below the surface, typically in urban areas for mass transit
+Rental
+Key	Description
+rental	Places where one can rent things
+rental.bicycle	
+rental.boat	
+rental.car	
+rental.ski	
+rental.storage	
+Service
+Key	Description
+service	Places that provide services to the public
+service.ambulance_station	Base for ambulances and emergency medical response teams
+service.beauty	
+service.beauty.hairdresser	
+service.beauty.massage	
+service.beauty.spa	
+service.bookmaker	
+service.cleaning	
+service.cleaning.dry_cleaning	
+service.cleaning.laundry	
+service.cleaning.lavoir	
+service.crematorium	Human and pet cremation services
+service.crematorium.human	Cremation services for humans
+service.crematorium.pet	Cremation services dedicated to pets
+service.estate_agent	
+service.financial	
+service.financial.atm	
+service.financial.bank	
+service.financial.bureau_de_change	
+service.financial.money_lender	
+service.financial.money_transfer	
+service.financial.payment_terminal	
+service.fire_station	Facility where fire service personnel and equipment are based
+service.funeral_directors	
+service.funeral_hall	Funeral halls and chapels
+service.locksmith	
+service.mortuary	Mortuaries and morgues
+service.place_of_mourning	Dedicated mourning or wake facilities
+service.police	
+service.post	
+service.post.box	
+service.post.office	
+service.recycling	
+service.recycling.bin	
+service.recycling.centre	
+service.recycling.container	
+service.social_facility	Places that provide social services, such as counseling, support groups, and other assistance to people in need, often run by government or non-profit organizations
+service.social_facility.clothers	
+service.social_facility.food	
+service.social_facility.shelter	
+service.tailor	
+service.taxi	
+service.travel_agency	
+service.vehicle	
+service.vehicle.car_wash	
+service.vehicle.charging_station	
+service.vehicle.fuel	
+service.vehicle.repair	
+service.vehicle.repair.car	
+service.vehicle.repair.motorcycle	
+Tourism
+Key	Description
+tourism	Places that can be interesting for tourists
+tourism.attraction	
+tourism.attraction.artwork	
+tourism.attraction.clock	
+tourism.attraction.fountain	
+tourism.attraction.viewpoint	
+tourism.information	
+tourism.information.map	
+tourism.information.office	
+tourism.information.ranger_station	
+tourism.sights	
+tourism.sights.archaeological_site	
+tourism.sights.battlefield	
+tourism.sights.bridge	
+tourism.sights.castle	
+tourism.sights.city_gate	
+tourism.sights.city_hall	
+tourism.sights.conference_centre	
+tourism.sights.fort	
+tourism.sights.lighthouse	
+tourism.sights.memorial	
+tourism.sights.memorial.aircraft	
+tourism.sights.memorial.boundary_stone	
+tourism.sights.memorial.locomotive	
+tourism.sights.memorial.milestone	
+tourism.sights.memorial.monument	
+tourism.sights.memorial.necropolis	Historical necropolises
+tourism.sights.memorial.pillory	
+tourism.sights.memorial.railway_car	
+tourism.sights.memorial.ship	
+tourism.sights.memorial.tank	
+tourism.sights.memorial.tomb	
+tourism.sights.memorial.tumulus	Burial mounds and tumuli
+tourism.sights.memorial.wayside_cross	
+tourism.sights.monastery	
+tourism.sights.place_of_worship	
+tourism.sights.place_of_worship.cathedral	
+tourism.sights.place_of_worship.chapel	
+tourism.sights.place_of_worship.church	
+tourism.sights.place_of_worship.mosque	
+tourism.sights.place_of_worship.shrine	
+tourism.sights.place_of_worship.synagogue	
+tourism.sights.place_of_worship.temple	
+tourism.sights.ruines	
+tourism.sights.tower	
+tourism.sights.windmill	
+Religion
+Key	Description
+religion	Places that are associated with a particular faith or religious institution, such as churches, mosques, synagogues, temples, and other places of worship
+religion.place_of_worship	
+religion.place_of_worship.buddhism	
+religion.place_of_worship.christianity	
+religion.place_of_worship.hinduism	
+religion.place_of_worship.islam	
+religion.place_of_worship.judaism	
+religion.place_of_worship.multifaith	
+religion.place_of_worship.shinto	
+religion.place_of_worship.sikhism	
+Camping
+Key	Description
+camping	Places that provide outdoor activity including overnight stay
+camping.camp_pitch	
+camping.camp_site	
+camping.caravan_site	
+camping.summer_camp	
+Amenity
+Key	Description
+amenity	Small amenities, that can be useful in different situations
+amenity.drinking_water	
+amenity.give_box	Places where people can donate or leave items for others to take for free, often found in public spaces or community centers
+amenity.give_box.books	
+amenity.give_box.food	
+amenity.toilet	
+Beach
+Key	Description
+beach	A shore of a body of water covered by sand, gravel, or larger rock fragments
+beach.beach_resort	
+Adult
+Key	Description
+adult	Places that provide entertainments for adults, sometimes with a sexual context
+adult.adult_gaming_centre	
+adult.brothel	
+adult.casino	
+adult.nightclub	
+adult.stripclub	
+adult.swingerclub	
+Building
+Key	Description
+building	Stand alone buildings and places
+building.accommodation	
+building.catering	
+building.college	
+building.commercial	
+building.dormitory	
+building.driving_school	
+building.entertainment	
+building.facility	
+building.garage	
+building.healthcare	
+building.historic	
+building.holiday_house	
+building.industrial	
+building.kindergarten	
+building.military	
+building.office	
+building.parking	
+building.place_of_worship	
+building.prison	
+building.public_and_civil	
+building.residential	
+building.school	
+building.service	
+building.spa	
+building.sport	
+building.toilet	
+building.tourism	
+building.transportation	
+building.university	
+Ski
+Key	Description
+ski	Infrastructure objects related to downhill skiing sport kinds
+ski.lift	
+ski.lift.cable_car	
+ski.lift.chair_lift	
+ski.lift.gondola	
+ski.lift.magic_carpet	
+ski.lift.mixed_lift	
+ski.lift.tow_line	
+Sport
+Key	Description
+sport	Infrastructure objects related to different sport kinds
+sport.dive_centre	
+sport.fitness	
+sport.fitness.fitness_centre	
+sport.fitness.fitness_station	
+sport.horse_riding	
+sport.ice_rink	
+sport.pitch	
+sport.sports_centre	
+sport.stadium	
+sport.swimming_pool	
+sport.track	
+Public transport
+Key	Description
+public_transport	Public transport stations and stops
+public_transport.aerialway	
+public_transport.bus	
+public_transport.ferry	
+public_transport.light_rail	
+public_transport.monorail	
+public_transport.subway	
+public_transport.subway.entrance	
+public_transport.train	
+public_transport.tram	
+Administrative
+Key	Description
+administrative	Administrative boundary
+administrative.city_level	
+administrative.continent_level	
+administrative.country_level	
+administrative.country_part_level	
+administrative.county_level	
+administrative.district_level	
+administrative.neighbourhood_level	
+administrative.state_level	
+administrative.suburb_level	
+Postal code
+Key	Description
+postal_code	Postcode boundary
+Political
+Key	Description
+political	Political boundary
+Low emission zone
+Key	Description
+low_emission_zone	Low emission zone
+Populated place
+Key	Description
+populated_place	Place where people live
+populated_place.allotments	
+populated_place.borough	
+populated_place.city	
+populated_place.city_block	
+populated_place.county	
+populated_place.district	
+populated_place.hamlet	
+populated_place.municipality	
+populated_place.neighbourhood	
+populated_place.province	
+populated_place.quarter	
+populated_place.region	
+populated_place.state	
+populated_place.subdistrict	
+populated_place.suburb	
+populated_place.town	
+populated_place.township	
+populated_place.village	
+Memorial
+Key	Description
+memorial	Generic memorial points of interest
+memorial.buddhist	Buddhist memorial sites
+memorial.cemetery	Cemeteries and burial complexes
+memorial.cemetery.sector	Individual sectors inside large cemeteries
+memorial.christian	Christian memorial sites
+memorial.christian.catholic	Catholic memorial sites
+memorial.christian.orthodox	Orthodox memorial sites
+memorial.christian.protestant	Protestant memorial sites
+memorial.graveyard	Graveyards without formal boundaries
+memorial.hindu	Hindu memorial sites
+memorial.jewish	Jewish memorial grounds
+memorial.muslim	Muslim memorial grounds
+Supported conditions
+Conditions refer to the specific attributes or characteristics of a place, such as its opening hours, wheelchair accessibility, or whether it has free Wi-Fi. These conditions can be used as filters in API requests to retrieve places that meet certain criteria.
+
+Similar to the category hierarchy, the conditions in Places API are also hierarchical. For more specific queries, use detailed keys, while for broader queries, use parent conditions.
+
+Key	Description
+internet_access	Places that provide an internet access
+internet_access.free	Internet access is available without charge
+internet_access.for_customers	Internet access is limited to paying guests or registered customers
+wheelchair	Places that are suitable to be used with wheelchairs
+wheelchair.yes	Fully wheelchair-accessible facilities
+wheelchair.limited	Partial wheelchair access (for example, only some entrances or floors)
+dogs	Places where dogs are allowed
+dogs.yes	Dogs are welcome without additional restrictions
+dogs.leashed	Dogs must remain on a leash
+no-dogs	Places where dogs are not allowed
+access	Places that are available for public
+access.yes	The access is specified as public
+access.not_specified	The access information is missing. The place is considered as public
+access_limited	Places with limited access
+access_limited.private	Entry restricted to private guests or members
+access_limited.customers	Entry limited to customers only
+access_limited.with_permit	Entry requires a special permit or authorization
+access_limited.services	Entry controlled by staff or security services
+no_access	Places that are not available for public
+fee	There is a fee
+no_fee	There is no fee or it's not specified
+no_fee.no	Explicitly marked as free of charge
+no_fee.not_specified	Fee information is not provided
+named	Name property defined for the place
+vegetarian	Places where you can buy or eat vegetarian food
+vegetarian.only	Places that serve vegetarian food only
+vegan	Places where you can buy or eat vegan food
+vegan.only	Places that serve vegan food only
+halal	Places where you can buy or eat halal food
+halal.only	Places that serve halal food only
+kosher	Places where you can buy or eat kosher food
+kosher.only	Places that serve kosher food only
+organic	Places where you can buy or eat organic food
+organic.only	Places that serve organic food only
+gluten_free	Places where you can buy or eat gluten free food
+sugar_free	Places where you can buy or eat sugar free food
+egg_free	Places where you can buy or eat egg free food
+soy_free	Places where you can buy or eat soy free food
+URL examples
+The following examples demonstrate how to use input parameters in the Places API, by showing sample URLs with different query parameters.
+
+Search places by multiple categories
+You can search by multiple categories at the same time. For example, the request below will return restaurants and cafes in Munich's historical center:
+
+https://api.geoapify.com/v2/places?categories=catering.restaurant,catering.cafe&filter=rect:11.573106549898483,48.13898913611139,11.57704581350751,48.13666585409989&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search places with a country filter
+
+Search places with conditions
+Conditions let you narrow your search results by adding additional requirements to the places. For example, you can search for restaurants that serve vegetarian food near Central Park, New York:
+
+https://api.geoapify.com/v2/places?categories=catering.restaurant&conditions=vegetarian&filter=rect:-73.99331143343392,40.77129742280923,-73.97215311088917,40.757134681430635&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search places with conditions
+
+Search places within a visible area
+You can search places near a visible area using bounding boxes. Here is an example of searching museums in Paris near Île de la Cité:
+
+https://api.geoapify.com/v2/places?categories=entertainment.museum&filter=rect:2.3380862086841603,48.861868995221684,2.357539944586165,48.850557094041235&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search places within visible area
+
+Search places within a city district
+You can search places within a particular district, city, or postcode boundary. Here is an example of searching theatres and other cultural objects in Caluire-et-Cuire, France:
+
+https://api.geoapify.com/v2/places?categories=entertainment.culture&filter=place:51a1f4444906681340595f4499441ae64640f00101f9017162010000000000c0020692031043616c756972652d65742d4375697265&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search places within a city district
+
+Search places near a location with a radius filter
+You can also use a circle to get places near a location. For example, this request searches underground stations within 1000 meters of a location in London:
+
+https://api.geoapify.com/v2/places?categories=public_transport.subway&filter=circle:-0.07071648508463113,51.50848194136378,1000&bias=proximity:-0.07071648508463113,51.50848194136378&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search places near a location with radius filter
+
+The bias parameter sorts the results by distance to the location you provide.
+
+Search places nearest to a location
+Using the bias parameter without a filter returns the closest places sorted by distance from the point you provide:
+
+https://api.geoapify.com/v2/places?categories=public_transport.subway&bias=proximity:-0.07071648508463113,51.50848194136378&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search places near a location
+
+Bias results within a circle
+Bias can also prioritize places within a circular area without excluding others:
+
+https://api.geoapify.com/v2/places?categories=catering.restaurant&bias=circle:-73.99,40.77,1500&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search with a circle bias
+
+Bias results within a rectangle
+Similarly, bias can prioritize places within a rectangle (bounding box):
+
+https://api.geoapify.com/v2/places?categories=catering.restaurant&bias=rect:-73.9933,40.7713,-73.9722,40.7571&limit=20&apiKey=YOUR_API_KEY
+Copy
+Try to search with a circle bias
+
+Get a large number of places using the offset parameter
+The maximum number of places you can request is 500. Use the offset parameter to retrieve more places.
+
+For example, the request below returns 500 supermarkets in Vienna:
+
+https://api.geoapify.com/v2/places?categories=commercial.supermarket&filter=rect:16.17903071551638,48.28499347053008,16.556767855560192,48.0623697740825&limit=500&apiKey=YOUR_API_KEY
+Copy
+Try to search large number of places
+
+Add offset=500 parameter to get a further 500 supermarkets:
+
+https://api.geoapify.com/v2/places?categories=commercial.supermarket&filter=rect:16.17903071551638,48.28499347053008,16.556767855560192,48.0623697740825&limit=500&offset=500&apiKey=YOUR_API_KEY
+Copy
+Try to search large number of places with offset

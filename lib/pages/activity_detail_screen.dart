@@ -78,7 +78,10 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
-              await DatabaseService().deleteActivity(_activity.id);
+              await DatabaseService().deleteActivity(
+                _activity.tripId,
+                _activity.id,
+              );
               if (mounted) {
                 Navigator.pop(context); // Close dialog
                 Navigator.pop(context, true); // Return to previous screen

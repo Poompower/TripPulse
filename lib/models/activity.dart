@@ -1,10 +1,12 @@
 class Activity {
   final dynamic id;
   final dynamic tripId;
-  final int dayNumber; // วันที่ 1, 2, 3...
+  final int dayNumber;
   final String title;
   final String? location;
   final String? time;
+  final String? imageUrl;
+  final String? category;
 
   Activity({
     this.id,
@@ -13,6 +15,8 @@ class Activity {
     required this.title,
     this.location,
     this.time,
+    this.imageUrl,
+    this.category,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +27,8 @@ class Activity {
       'title': title,
       'location': location,
       'time': time,
+      'imageUrl': imageUrl,
+      'category': category,
     };
   }
 
@@ -34,6 +40,8 @@ class Activity {
       title: map['title'],
       location: map['location'],
       time: map['time'],
+      imageUrl: map['imageUrl'],
+      category: map['category'],
     );
   }
 }
