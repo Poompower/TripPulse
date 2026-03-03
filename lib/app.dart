@@ -5,6 +5,9 @@ import 'pages/trip_list_screen.dart';
 import 'pages/create_trip_screen.dart';
 import 'pages/detail_trip_screen.dart';
 import 'pages/edit_trip_screen.dart';
+import 'pages/login_screen.dart';
+import 'pages/signup_screen.dart';
+import 'pages/profile_screen.dart';
 
 import 'places/screens/places_search_screen.dart';
 
@@ -23,11 +26,17 @@ class TripPulseApp extends StatelessWidget {
       ),
 
       // หน้าแรก
-      home: TripListScreen(),
+      home: LoginScreen(),
 
       // Route กลางของแอป
       onGenerateRoute: (settings) {
         switch (settings.name) {
+          case '/login':
+            return MaterialPageRoute(builder: (_) => const LoginScreen());
+          case '/signup':
+            return MaterialPageRoute(builder: (_) => const SignupScreen());
+          case '/profile-screen':
+            return MaterialPageRoute(builder: (_) => const ProfileScreen());
           // ---------------- TRIP ----------------
           case '/trip-list-screen':
             return MaterialPageRoute(builder: (_) => TripListScreen());
