@@ -1,3 +1,6 @@
+﻿import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/activity.dart';
@@ -73,10 +76,7 @@ class DatabaseService {
     await docRef.set(activity.toMap(), SetOptions(merge: true));
   }
 
-  Future<List<Activity>> getActivitiesByDay(
-    dynamic tripId,
-    int dayNumber,
-  ) async {
+  Future<List<Activity>> getActivitiesByDay(dynamic tripId, int dayNumber) async {
     final querySnapshot = await _db
         .collection(_collection)
         .doc(tripId.toString())
@@ -132,7 +132,7 @@ class DatabaseService {
   }
 
   Future<({Map<String, String> currencies, DateTime? updatedAt})?>
-  getCurrencyCache() async {
+      getCurrencyCache() async {
     final snapshot = await _db
         .collection(_metaCollection)
         .doc(_currencyCacheDoc)
@@ -166,5 +166,55 @@ class DatabaseService {
       'currencies': currencies,
       'updatedAt': Timestamp.fromDate(updatedAt),
     }, SetOptions(merge: true));
+  }
+
+  Future<bool> checkPhoneDuplicate(String phone) async {
+    final querySnapshot =
+        await _db.collection('users').where('phone', isEqualTo: phone).get();
+
+    return querySnapshot.docs.isNotEmpty;
+  }
+
+  Future<void> saveUser({
+    required String uid,
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String phone,
+  }) async {
+    await _db.collection('users').doc(uid).set({
+      'uid': uid,
+      'email': email,
+      'firstName': firstName,
+      'lastName': lastName,
+      'phone': phone,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<Map<String, dynamic>?> getUserProfile(String uid) async {
+    final doc = await _db.collection('users').doc(uid).get();
+    if (doc.exists) {
+      return doc.data();
+    }
+    return null;
+  }
+
+  Future<void> updateProfile(
+    String uid,
+    String firstName,
+    String lastName,
+  ) async {
+    await _db.collection('users').doc(uid).update({
+      'firstName': firstName,
+      'lastName': lastName,
+    });
+  }
+
+  Future<void> uploadProfileImageBase64(String uid, File imageFile) async {
+    final bytes = await imageFile.readAsBytes();
+    final base64Image = base64Encode(bytes);
+
+    await _db.collection('users').doc(uid).update({'photoBase64': base64Image});
   }
 }

@@ -209,7 +209,7 @@ class CustomBottomBar extends StatelessWidget {
       case 3:
         // Profile/Settings - would need to be implemented
         // For now, navigate to trip list
-        Navigator.pushReplacementNamed(context, '/trip-list-screen');
+        Navigator.pushReplacementNamed(context, '/profile-screen');
         break;
     }
   }
@@ -223,9 +223,11 @@ class CustomBottomBar extends StatelessWidget {
         return 1;
       case '/general-map-screen':
         return 2;
+      case '/profile-screen': // เพิ่มเคสนี้
+        return 3;
       case '/trip-detail-screen':
       case '/day-itinerary-screen':
-        return 0; // Keep trips selected when viewing trip details
+        return 0;
       default:
         return 0;
     }
