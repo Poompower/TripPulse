@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
-/// Bottom sheet for category filtering
-/// - UI layer only
-/// - Returns Geoapify category keys
+// Bottom sheet for selecting Geoapify category keys.
 class FilterBottomSheetWidget extends StatefulWidget {
-  /// Selected Geoapify categories (e.g. tourism.museum)
   final Set<String> selectedCategories;
-
-  /// Callback returns Geoapify category keys
   final ValueChanged<Set<String>> onApplyFilters;
 
   const FilterBottomSheetWidget({
@@ -23,115 +18,60 @@ class FilterBottomSheetWidget extends StatefulWidget {
 }
 
 class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
-  late Set<String> _tempSelectedCategories;
+  late Set<String> _tempSelected;
 
-  /// Category groups
-  /// label = UI text
-  /// values = Geoapify categories
+  // Uses category keys supported by Geoapify.
   final List<Map<String, dynamic>> _categoryGroups = [
     {
       'title': 'Cultural & Historic',
       'items': [
+        {'label': 'Museum', 'value': 'tourism.museum'},
+        {'label': 'Gallery', 'value': 'tourism.gallery'},
+        {'label': 'Monument', 'value': 'tourism.monument'},
         {
-          'label': 'Museums',
-          'values': ['tourism.museum'],
+          'label': 'Archaeological Site',
+          'value': 'tourism.archaeological_site',
         },
-        {
-          'label': 'Historic Sites',
-          'values': ['heritage', 'tourism.attraction'],
-        },
-        {
-          'label': 'Art Galleries',
-          'values': ['tourism.gallery'],
-        },
-        {
-          'label': 'Monuments',
-          'values': ['tourism.monument'],
-        },
+        {'label': 'Attraction', 'value': 'tourism.attraction'},
       ],
     },
     {
       'title': 'Food & Dining',
       'items': [
-        {
-          'label': 'Restaurants',
-          'values': ['catering.restaurant'],
-        },
-        {
-          'label': 'Cafes',
-          'values': ['catering.cafe'],
-        },
-        {
-          'label': 'Bars',
-          'values': ['catering.bar'],
-        },
-        {
-          'label': 'Food Markets',
-          'values': ['commercial.marketplace'],
-        },
+        {'label': 'Restaurant', 'value': 'catering.restaurant'},
+        {'label': 'Cafe', 'value': 'catering.cafe'},
+        {'label': 'Fast Food', 'value': 'catering.fast_food'},
+        {'label': 'Bar', 'value': 'catering.bar'},
+        {'label': 'Pub', 'value': 'catering.pub'},
       ],
     },
     {
       'title': 'Nature & Outdoors',
       'items': [
-        {
-          'label': 'Parks',
-          'values': ['leisure.park'],
-        },
-        {
-          'label': 'Beaches',
-          'values': ['natural.beach'],
-        },
-        {
-          'label': 'Gardens',
-          'values': ['leisure.garden'],
-        },
-        {
-          'label': 'Viewpoints',
-          'values': ['tourism.viewpoint'],
-        },
+        {'label': 'Park', 'value': 'leisure.park'},
+        {'label': 'Nature Reserve', 'value': 'leisure.nature_reserve'},
+        {'label': 'Beach', 'value': 'natural.beach'},
+        {'label': 'Garden', 'value': 'leisure.garden'},
+        {'label': 'Viewpoint', 'value': 'tourism.viewpoint'},
       ],
     },
     {
       'title': 'Entertainment',
       'items': [
-        {
-          'label': 'Theaters',
-          'values': ['entertainment.theatre'],
-        },
-        {
-          'label': 'Cinemas',
-          'values': ['entertainment.cinema'],
-        },
-        {
-          'label': 'Shopping',
-          'values': ['commercial.shopping_mall'],
-        },
-        {
-          'label': 'Nightlife',
-          'values': ['entertainment.nightclub'],
-        },
+        {'label': 'Cinema', 'value': 'entertainment.cinema'},
+        {'label': 'Theatre', 'value': 'entertainment.theatre'},
+        {'label': 'Mall', 'value': 'commercial.shopping_mall'},
+        {'label': 'Nightclub', 'value': 'entertainment.nightclub'},
       ],
     },
     {
       'title': 'Activities',
       'items': [
-        {
-          'label': 'Sports',
-          'values': ['sport'],
-        },
-        {
-          'label': 'Adventure',
-          'values': ['tourism.attraction'],
-        },
-        {
-          'label': 'Tours',
-          'values': ['tourism.information'],
-        },
-        {
-          'label': 'Workshops',
-          'values': ['craft'],
-        },
+        {'label': 'Sports Centre', 'value': 'sport.sports_centre'},
+        {'label': 'Stadium', 'value': 'sport.stadium'},
+        {'label': 'Swimming Pool', 'value': 'sport.swimming'},
+        {'label': 'Zoo', 'value': 'tourism.zoo'},
+        {'label': 'Theme Park', 'value': 'tourism.theme_park'},
       ],
     },
   ];
@@ -139,7 +79,7 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
   @override
   void initState() {
     super.initState();
-    _tempSelectedCategories = Set.from(widget.selectedCategories);
+    _tempSelected = Set.from(widget.selectedCategories);
   }
 
   @override
@@ -147,26 +87,22 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
     final theme = Theme.of(context);
 
     return Container(
-      constraints: BoxConstraints(maxHeight: 80.h ),
+      constraints: BoxConstraints(maxHeight: 80.h),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
+          SizedBox(height: 1.5.h),
           Container(
-            margin: EdgeInsets.only(top: 2.h),
             width: 12.w,
-            height: 0.5.h,
+            height: 0.6.h,
             decoration: BoxDecoration(
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
-
-          // Header
           Padding(
             padding: EdgeInsets.all(4.w),
             child: Row(
@@ -180,49 +116,33 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
                 ),
                 TextButton(
                   onPressed: () {
-                    setState(() {
-                      _tempSelectedCategories.clear();
-                    });
+                    setState(() => _tempSelected.clear());
                   },
                   child: const Text('Clear All'),
                 ),
               ],
             ),
           ),
-
           const Divider(height: 1),
-
-          // Category groups
-          Flexible(
+          Expanded(
             child: ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: 2.h),
               itemCount: _categoryGroups.length,
-              itemBuilder: (context, index) {
+              itemBuilder: (_, index) {
                 final group = _categoryGroups[index];
-                return _buildCategoryGroup(
-                  context,
-                  group['title'] as String,
-                  group['items'] as List<Map<String, dynamic>>,
-                );
+                return _buildGroup(context, group['title'], group['items']);
               },
             ),
           ),
-
-          // Apply button
-          Container(
+          Padding(
             padding: EdgeInsets.all(4.w),
-            child: SafeArea(
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    widget.onApplyFilters(_tempSelectedCategories);
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Apply Filters${_tempSelectedCategories.isNotEmpty ? ' (${_tempSelectedCategories.length})' : ''}',
-                  ),
-                ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  widget.onApplyFilters(_tempSelected);
+                  Navigator.pop(context);
+                },
+                child: Text('Apply Filters (${_tempSelected.length})'),
               ),
             ),
           ),
@@ -231,11 +151,7 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
     );
   }
 
-  Widget _buildCategoryGroup(
-    BuildContext context,
-    String title,
-    List<Map<String, dynamic>> items,
-  ) {
+  Widget _buildGroup(BuildContext context, String title, List items) {
     final theme = Theme.of(context);
 
     return ExpansionTile(
@@ -246,12 +162,10 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
         ),
       ),
       initiallyExpanded: true,
-      children: items.map((item) {
-        final label = item['label'] as String;
-        final values = item['values'] as List<String>;
-
-        final isSelected =
-            values.any((v) => _tempSelectedCategories.contains(v));
+      children: items.map<Widget>((item) {
+        final String label = item['label'];
+        final String value = item['value'];
+        final isSelected = _tempSelected.contains(value);
 
         return CheckboxListTile(
           title: Text(label),
@@ -259,9 +173,9 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
           onChanged: (checked) {
             setState(() {
               if (checked == true) {
-                _tempSelectedCategories.addAll(values);
+                _tempSelected.add(value);
               } else {
-                _tempSelectedCategories.removeAll(values);
+                _tempSelected.remove(value);
               }
             });
           },

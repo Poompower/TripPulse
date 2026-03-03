@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../models/place.dart';
+import '../services/wikimedia_image_service.dart';
 
 class PlaceCardWidget extends StatelessWidget {
   final Place place;
@@ -33,19 +35,7 @@ class PlaceCardWidget extends StatelessWidget {
               // ===== Image =====
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: place.imageUrl != null
-                    ? Image.network(
-                        place.imageUrl!,
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        width: 64,
-                        height: 64,
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.place, size: 32),
-                      ),
+                child: _PlaceImage(place: place),
               ),
               const SizedBox(width: 12),
 
@@ -77,17 +67,16 @@ class PlaceCardWidget extends StatelessWidget {
                     // Rating + Distance (mock rating for now)
                     Row(
                       children: [
-                        const Icon(Icons.star,
-                            size: 14, color: Colors.orange),
+                        const Icon(Icons.star, size: 14, color: Colors.orange),
                         const SizedBox(width: 4),
-                        const Text(
-                          '4.8',
-                          style: TextStyle(fontSize: 12),
-                        ),
+                        const Text('4.8', style: TextStyle(fontSize: 12)),
                         const SizedBox(width: 12),
                         if (place.distanceKm != null) ...[
-                          const Icon(Icons.location_on,
-                              size: 14, color: Colors.grey),
+                          const Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${place.distanceKm!.toStringAsFixed(1)} km from center',
@@ -130,6 +119,41 @@ class PlaceCardWidget extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PlaceImage extends StatelessWidget {
+  final Place place;
+
+  const _PlaceImage({required this.place});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: WikimediaImageService.instance.resolveImageUrl(place),
+      builder: (context, snapshot) {
+        final imageUrl = snapshot.data;
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          return Image.network(
+            imageUrl,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _placeholder(),
+          );
+        }
+        return _placeholder();
+      },
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      width: 64,
+      height: 64,
+      color: Colors.grey.shade200,
+      child: const Icon(Icons.place, size: 32),
     );
   }
 }

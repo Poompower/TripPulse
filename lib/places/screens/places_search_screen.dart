@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../models/place.dart';
 import '../../models/trip.dart';
-import '../services/places_service.dart';
 import '../../services/database_service.dart';
-
 import '../../widgets/custom_bottom_bar.dart';
-import '../widgets/search_bar_widget.dart';
-import '../widgets/place_card_widget.dart';
+import '../models/place.dart';
+import '../services/places_service.dart';
+import '../widgets/category_filter_chips_widget.dart';
 import '../widgets/day_selector_bottom_sheet_widget.dart';
 import '../widgets/filter_bottom_sheet_widget.dart';
+import '../widgets/place_card_widget.dart';
+import '../widgets/search_bar_widget.dart';
 
 class PlacesSearchScreen extends StatefulWidget {
   final String destinationName;
@@ -31,76 +31,85 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
   final PlacesService _placesService = PlacesService();
   final DatabaseService _databaseService = DatabaseService();
 
-  // Search attractions controller
+  // Search attractions inside current place results.
   final TextEditingController _searchController = TextEditingController();
 
-  // ===== Search place context =====
+  // Search place context (e.g., Tokyo, Japan).
+  final TextEditingController _placeController = TextEditingController();
+
   String _currentPlaceName = '';
   double? _currentLat;
   double? _currentLon;
 
-  // ===== Filters =====
-  Set<String> _selectedCategories = {};
+  List<({String name, double lat, double lon})> _suggestions = [];
 
-  // ===== UI state =====
+  List<Place> _allPlaces = [];
+  List<Place> _filteredPlaces = [];
+
+  Set<String> _selectedCategories = {};
+  List<Map<String, dynamic>> _categoryData = [];
+
   bool _isLoading = false;
   String? _error;
-  List<Place> _places = [];
 
   @override
   void initState() {
     super.initState();
 
-    // initial context from trip destination
     _currentPlaceName = widget.destinationName;
     _currentLat = widget.lat;
     _currentLon = widget.lon;
 
-    _searchController.text = '';
+    debugPrint('INIT -> $_currentPlaceName');
     _searchPlaces();
   }
 
-  // ==========================================================
-  // 🔍 Search place (Tokyo, Japan → geocode → lat/lon)
-  // ==========================================================
-  Future<void> _searchPlace(String placeName) async {
-    if (placeName.trim().isEmpty) return;
+  Future<void> _onSearchPlaceChanged(String value) async {
+    debugPrint('Autocomplete typing: $value');
 
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    if (value.trim().length < 3) {
+      debugPrint('Autocomplete skipped (<3 chars)');
+      setState(() => _suggestions = []);
+      return;
+    }
 
     try {
-      final result = await _placesService.geocodePlace(placeName);
-
+      final results = await _placesService.searchPlaceSuggestions(value);
       if (!mounted) return;
 
-      setState(() {
-        _currentPlaceName = placeName;
-        _currentLat = result.lat;
-        _currentLon = result.lon;
-      });
-
-      // after geocode → reload attractions
-      await _searchPlaces();
+      debugPrint('Autocomplete result count: ${results.length}');
+      setState(() => _suggestions = results);
     } catch (e) {
+      debugPrint('Autocomplete ERROR: $e');
       if (!mounted) return;
-      setState(() {
-        _error = 'Place not found';
-      });
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _suggestions = []);
     }
   }
 
-  // ==========================================================
-  // 🔎 Search attractions (radius 5000, category filter)
-  // ==========================================================
+  Future<void> _onSelectPlaceSuggestion(
+    ({String name, double lat, double lon}) place,
+  ) async {
+    debugPrint('Selected place: ${place.name}');
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _currentPlaceName = place.name;
+      _currentLat = place.lat;
+      _currentLon = place.lon;
+      _suggestions = [];
+      _placeController.text = place.name;
+    });
+
+    await _searchPlaces();
+  }
+
+  // Load place results from API and then apply local filter once.
   Future<void> _searchPlaces() async {
+    debugPrint('---- API CALL ----');
+    debugPrint('Lat/Lon: $_currentLat / $_currentLon');
+    debugPrint('Query: ${_searchController.text}');
+
+    if (_isLoading) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -111,31 +120,59 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
         query: _searchController.text,
         lat: _currentLat,
         lon: _currentLon,
-        categories:
-            _selectedCategories.isNotEmpty ? _selectedCategories.toList() : null,
       );
 
+      debugPrint('API result count: ${results.length}');
       if (!mounted) return;
 
       setState(() {
-        _places = results;
+        _allPlaces = results;
+        _buildCategoryData();
       });
+
+      _applyLocalFilter();
+
+      debugPrint('Places loaded: ${_allPlaces.length}');
+      debugPrint('Categories built: ${_categoryData.length}');
     } catch (e) {
+      debugPrint('SEARCH ERROR: $e');
       if (!mounted) return;
       setState(() {
         _error = e.toString();
+        _allPlaces = [];
+        _filteredPlaces = [];
+        _categoryData = [];
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  // ==========================================================
-  // 🏷 Open filter bottom sheet
-  // ==========================================================
+  // Client-side filter by selected categories and search text.
+  void _applyLocalFilter() {
+    debugPrint('Applying local filter: $_selectedCategories');
+
+    final searchText = _searchController.text.trim().toLowerCase();
+
+    _filteredPlaces = _allPlaces.where((place) {
+      final matchCategory =
+          _selectedCategories.isEmpty ||
+          _selectedCategories.any(
+            (cat) => place.category.toLowerCase().contains(cat.toLowerCase()),
+          );
+
+      final matchSearch =
+          searchText.isEmpty || place.name.toLowerCase().contains(searchText);
+
+      return matchCategory && matchSearch;
+    }).toList();
+
+    debugPrint('Filtered result count: ${_filteredPlaces.length}');
+    setState(() {});
+  }
+
   Future<void> _openFilter() async {
     await showModalBottomSheet(
       context: context,
@@ -143,149 +180,124 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
       builder: (_) => FilterBottomSheetWidget(
         selectedCategories: _selectedCategories,
         onApplyFilters: (categories) {
-          setState(() {
-            _selectedCategories = categories;
-          });
-          _searchPlaces();
+          debugPrint('Filter applied: $categories');
+          _selectedCategories = categories;
+          _applyLocalFilter();
         },
       ),
     );
   }
 
-  // ==========================================================
-  // ➕ Add Place → Select Trip → Select Day
-  // ==========================================================
+  void _buildCategoryData() {
+    final Map<String, int> counter = {};
+
+    for (final place in _allPlaces) {
+      final cat = place.category;
+      if (cat.isNotEmpty) {
+        counter[cat] = (counter[cat] ?? 0) + 1;
+      }
+    }
+
+    _categoryData = counter.entries
+        .map((e) => {'name': e.key, 'count': e.value})
+        .toList();
+  }
+
   Future<void> _onAddPlace(Place place) async {
+    debugPrint('Add place: ${place.name}');
     final trips = await _databaseService.trips();
     if (!mounted) return;
 
     final placeCountry = place.country?.toLowerCase();
+    final placeCountryCode = place.countryCode?.toUpperCase();
 
-    if (placeCountry == null || placeCountry.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot determine country for this place')),
-      );
-      return;
-    }
-
-    // filter trip by country (Japan-level)
     final matchedTrips = trips.where((trip) {
-      return trip.destination.toLowerCase().contains(placeCountry);
+      if (placeCountryCode != null &&
+          placeCountryCode.isNotEmpty &&
+          trip.countryCode != null &&
+          trip.countryCode!.isNotEmpty) {
+        return trip.countryCode!.toUpperCase() == placeCountryCode;
+      }
+
+      if (placeCountry != null &&
+          placeCountry.isNotEmpty &&
+          trip.country != null &&
+          trip.country!.isNotEmpty) {
+        return trip.country!.toLowerCase() == placeCountry;
+      }
+
+      return trip.destination.toLowerCase().contains(placeCountry ?? '');
     }).toList();
 
     if (matchedTrips.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No trips match this place country')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No matching trips')));
       return;
     }
 
-    // select trip
     final Trip? selectedTrip = await showModalBottomSheet<Trip>(
       context: context,
-      isScrollControlled: true,
-      builder: (_) {
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: matchedTrips.map((trip) {
-            return ListTile(
-              title: Text(trip.title),
-              subtitle: Text(trip.destination),
-              onTap: () => Navigator.pop(context, trip),
-            );
-          }).toList(),
-        );
-      },
+      builder: (_) => ListView(
+        padding: const EdgeInsets.all(16),
+        children: matchedTrips.map((trip) {
+          return ListTile(
+            title: Text(trip.title),
+            subtitle: Text(trip.destination),
+            onTap: () => Navigator.pop(context, trip),
+          );
+        }).toList(),
+      ),
     );
 
-    if (selectedTrip == null || !mounted) return;
+    if (!mounted) return;
+    if (selectedTrip == null) return;
 
-    // select day (real insert)
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      builder: (_) => DaySelectorBottomSheetWidget(
-        place: place,
-        trip: selectedTrip,
-      ),
+      builder: (_) =>
+          DaySelectorBottomSheetWidget(place: place, trip: selectedTrip),
     );
   }
 
-  // ==========================================================
-  // UI helpers
-  // ==========================================================
   Widget _buildBody() {
     if (_isLoading) {
+      debugPrint('UI -> loading');
       return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
+      debugPrint('UI -> error: $_error');
       return Center(child: Text(_error!));
     }
 
-    if (_places.isEmpty) {
+    if (_filteredPlaces.isEmpty) {
+      debugPrint('UI -> empty');
       return const Center(child: Text('No places found'));
     }
 
     return ListView.builder(
-      itemCount: _places.length,
+      itemCount: _filteredPlaces.length,
       itemBuilder: (_, index) {
-        final place = _places[index];
+        final place = _filteredPlaces[index];
         return PlaceCardWidget(
           place: place,
-          onTap: () {
-            // future: place detail
-          },
+          onTap: () {},
           onAdd: () => _onAddPlace(place),
         );
       },
     );
   }
 
-  // ==========================================================
-  // Build
-  // ==========================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentPlaceName.isNotEmpty
-            ? 'Places in $_currentPlaceName'
-            : 'Search Places'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.public),
-            tooltip: 'Search place',
-            onPressed: () {
-              final controller = TextEditingController();
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text('Search place'),
-                  content: TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. Tokyo, Japan',
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _searchPlace(controller.text);
-                      },
-                      child: const Text('Search'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+        title: Text(
+          _currentPlaceName.isNotEmpty
+              ? 'Places in $_currentPlaceName'
+              : 'Search Places',
+        ),
       ),
       bottomNavigationBar: CustomBottomBar(
         currentIndex: 1,
@@ -299,11 +311,52 @@ class _PlacesSearchScreenState extends State<PlacesSearchScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _placeController,
+              onChanged: _onSearchPlaceChanged,
+              decoration: const InputDecoration(
+                hintText: 'Search place (e.g. Tokyo, Japan)',
+                prefixIcon: Icon(Icons.public),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          if (_suggestions.isNotEmpty)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView(
+                shrinkWrap: true,
+                children: _suggestions.map((s) {
+                  return ListTile(
+                    leading: const Icon(Icons.place),
+                    title: Text(s.name),
+                    onTap: () => _onSelectPlaceSuggestion(s),
+                  );
+                }).toList(),
+              ),
+            ),
           SearchBarWidget(
             controller: _searchController,
-            onSearch: _searchPlaces,
+            onSearch: _applyLocalFilter,
             onOpenFilter: _openFilter,
           ),
+          if (_categoryData.isNotEmpty)
+            CategoryFilterChipsWidget(
+              categories: _categoryData,
+              selectedCategories: _selectedCategories,
+              onCategoryToggle: (cat) {
+                setState(() {
+                  if (_selectedCategories.contains(cat)) {
+                    _selectedCategories.remove(cat);
+                  } else {
+                    _selectedCategories.add(cat);
+                  }
+                });
+                _applyLocalFilter();
+              },
+            ),
           Expanded(child: _buildBody()),
         ],
       ),

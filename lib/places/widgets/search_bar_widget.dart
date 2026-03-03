@@ -1,14 +1,6 @@
-// ไฟล์นี้ทำหน้าที่:
-
-// search text
-
-// กด enter เพื่อ search
-
-// ปุ่ม filter แยกชัดเจน (ไม่ยิง search มั่ว)
-
-// ไม่มี logic ธุรกิจ ปล่อยให้ screen คุม
 import 'package:flutter/material.dart';
 
+// Search bar with search submit and filter action.
 class SearchBarWidget extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSearch;
@@ -36,9 +28,7 @@ class SearchBarWidget extends StatelessWidget {
             icon: const Icon(Icons.filter_list),
             onPressed: onOpenFilter,
           ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );

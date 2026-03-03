@@ -1,19 +1,32 @@
+import 'dart:developer' as dev;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/place.dart';
 import '../../services/location_service.dart';
 
+typedef DestinationSuggestion = ({
+  String displayName,
+  String city,
+  String country,
+  String countryCode,
+  double lat,
+  double lon,
+});
+
+/// ==========================================================
 /// PlacesService
-/// - Geoapify Places API only
-/// - Search attractions by radius (default 5000m)
-/// - UI-agnostic
+/// - Geoapify Places API v2
+/// - Always fetch broad dataset
+/// - Flutter handles filtering
+/// ==========================================================
 class PlacesService {
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: 'https://api.geoapify.com/v2',
       connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 20),
     ),
   );
 
@@ -26,24 +39,18 @@ class PlacesService {
   }
 
   /// ==========================================================
-  /// Search attractions by location
-  ///
-  /// - lat/lon: center point (optional)
-  ///   - if null -> use current location
-  /// - query: attraction name (optional)
-  /// - categories: Geoapify categories (optional)
-  /// - radius: fixed at 5000 meters
+  /// 🔎 Search Places (NO server-side category filter)
+  /// Flutter will filter locally
   /// ==========================================================
   Future<List<Place>> searchPlaces({
     String? query,
     double? lat,
     double? lon,
-    List<String>? categories,
   }) async {
     double finalLat;
     double finalLon;
 
-    // 🔥 DEFAULT: ใช้ตำแหน่งปัจจุบัน
+    // Use provided location or current location
     if (lat != null && lon != null) {
       finalLat = lat;
       finalLon = lon;
@@ -53,67 +60,130 @@ class PlacesService {
       finalLon = position.longitude;
     }
 
-    final Map<String, dynamic> params = {
+    final params = <String, dynamic>{
       'apiKey': _apiKey,
-      'limit': 20,
-
-      // spatial control (ตาม spec)
+      'limit': 50,
+      'categories': 'tourism,entertainment,catering,leisure',
       'filter': 'circle:$finalLon,$finalLat,5000',
       'bias': 'proximity:$finalLon,$finalLat',
     };
 
-    // 🔍 search by attraction name (optional)
     if (query != null && query.trim().isNotEmpty) {
       params['name'] = query.trim();
     }
 
-    // 🏷 category filter
-    if (categories != null && categories.isNotEmpty) {
-      params['categories'] = categories.join(',');
-    } else {
-      // default attractions
-      params['categories'] = 'tourism.attraction';
+    dev.log('---- API CALL ----');
+    dev.log('Lat/Lon: $finalLat / $finalLon');
+    dev.log('Query: ${query ?? ""}');
+    dev.log('Params: $params');
+
+    try {
+      final response = await _dio.get('/places', queryParameters: params);
+
+      dev.log('STATUS: ${response.statusCode}');
+      dev.log('RESULT COUNT: ${response.data['features']?.length ?? 0}');
+
+      final features = response.data['features'] as List?;
+      if (features == null || features.isEmpty) {
+        return [];
+      }
+
+      return features
+          .map((e) => Place.fromGeoapify(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, stack) {
+      dev.log('SEARCH ERROR: $e');
+      dev.log('STACK: $stack');
+      rethrow;
     }
-
-    final response = await _dio.get(
-      '/places',
-      queryParameters: params,
-    );
-
-    final features = response.data['features'] as List?;
-    if (features == null || features.isEmpty) {
-      return [];
-    }
-
-    return features
-        .map(
-          (e) => Place.fromGeoapify(e as Map<String, dynamic>),
-        )
-        .toList();
   }
+
   /// ==========================================================
-  /// Geocode place name -> lat/lon
-  /// Example: "Tokyo, Japan"
+  /// 🔍 Autocomplete suggestions
   /// ==========================================================
-    Future<({double lat, double lon})> geocodePlace(String query) async {
+  Future<List<({String name, double lat, double lon})>> searchPlaceSuggestions(
+    String query,
+  ) async {
+    if (query.trim().isEmpty) return [];
+
+    try {
       final response = await _dio.get(
-        'https://api.geoapify.com/v1/geocode/search', // ✅ v1 เท่านั้น
+        'https://api.geoapify.com/v1/geocode/autocomplete',
+        queryParameters: {'text': query.trim(), 'limit': 5, 'apiKey': _apiKey},
+      );
+
+      final features = response.data['features'] as List?;
+      if (features == null || features.isEmpty) return [];
+
+      return features.map((e) {
+        final props = e['properties'];
+        final geometry = e['geometry'];
+
+        return (
+          name: props['formatted'] as String,
+          lat: (geometry['coordinates'][1] as num).toDouble(),
+          lon: (geometry['coordinates'][0] as num).toDouble(),
+        );
+      }).toList();
+    } catch (e, stack) {
+      dev.log('AUTOCOMPLETE ERROR: $e');
+      dev.log('STACK: $stack');
+      rethrow;
+    }
+  }
+
+  Future<List<DestinationSuggestion>> searchCityCountrySuggestions(
+    String query,
+  ) async {
+    if (query.trim().isEmpty) return [];
+
+    try {
+      final response = await _dio.get(
+        'https://api.geoapify.com/v1/geocode/autocomplete',
         queryParameters: {
-          'text': query,
-          'format': 'json', // ✅ สำคัญมาก
-          'limit': 1,
+          'text': query.trim(),
+          'type': 'city',
+          'limit': 8,
           'apiKey': _apiKey,
         },
       );
 
-      final results = response.data['results'] as List?;
-      if (results == null || results.isEmpty) {
-        throw Exception('Place not found');
-      }
+      final features = response.data['features'] as List?;
+      if (features == null || features.isEmpty) return [];
 
-      return (
-        lat: (results.first['lat'] as num).toDouble(),
-        lon: (results.first['lon'] as num).toDouble(),
-      );
+      return features.map((e) {
+        final props = e['properties'] as Map<String, dynamic>;
+        final geometry = e['geometry'] as Map<String, dynamic>;
+        final coordinates = geometry['coordinates'] as List;
+
+        final city =
+            (props['city'] ??
+                    props['county'] ??
+                    props['state'] ??
+                    props['formatted'] ??
+                    '')
+                .toString();
+        final country = (props['country'] ?? '').toString();
+        final countryCode = (props['country_code'] ?? '')
+            .toString()
+            .toUpperCase();
+        final displayName = city.isNotEmpty && country.isNotEmpty
+            ? '$city, $country'
+            : city;
+
+        return (
+          displayName: displayName,
+          city: city,
+          country: country,
+          countryCode: countryCode,
+          lat: (coordinates[1] as num).toDouble(),
+          lon: (coordinates[0] as num).toDouble(),
+        );
+      }).toList();
+    } catch (e, stack) {
+      dev.log('DESTINATION AUTOCOMPLETE ERROR: $e');
+      dev.log('STACK: $stack');
+      rethrow;
     }
+  }
 }

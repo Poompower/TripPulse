@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/place.dart';
-import '../../services/database_service.dart';
+import 'package:intl/intl.dart';
+
 import '../../models/activity.dart';
 import '../../models/trip.dart';
+import '../../services/database_service.dart';
+import '../models/place.dart';
 
 class DaySelectorBottomSheetWidget extends StatelessWidget {
   final Place place;
-
-  // 🔥 ใช้ Trip จริง ไม่ mock
   final Trip trip;
 
   const DaySelectorBottomSheetWidget({
@@ -16,12 +16,21 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
     required this.trip,
   });
 
-  /// คำนวณจำนวนวันจาก startDate → endDate (รวมวันแรก)
+  DateTime _parseTripDate(String value) {
+    try {
+      return DateTime.parse(value);
+    } catch (_) {
+      return DateFormat('MMM dd, yyyy').parseStrict(value);
+    }
+  }
+
+  // Inclusive days from trip start to trip end.
   int get totalDays {
-  final start = DateTime.parse(trip.startDate);
-  final end = DateTime.parse(trip.endDate);
-  return end.difference(start).inDays + 1;
-}
+    final start = _parseTripDate(trip.startDate);
+    final end = _parseTripDate(trip.endDate);
+    final days = end.difference(start).inDays + 1;
+    return days > 0 ? days : 1;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,19 +43,11 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
           children: [
             const Text(
               'Add to itinerary',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              place.name,
-              style: const TextStyle(color: Colors.grey),
-            ),
+            Text(place.name, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
-
-            // ===== DAY LIST (อิง Trip จริง ไม่ mock) =====
             for (int day = 1; day <= totalDays; day++)
               ListTile(
                 leading: const Icon(Icons.calendar_today),
@@ -61,9 +62,7 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
     );
   }
 
-  // =========================
-  // INSERT ACTIVITY จริง
-  // =========================
+  // Insert activity into database.
   Future<void> _addActivity(BuildContext context, int dayNumber) async {
     final db = DatabaseService();
 
@@ -74,6 +73,8 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
       title: place.name,
       location: trip.destination,
       time: '',
+      imageUrl: place.imageUrl,
+      category: place.category,
     );
 
     await db.insertActivity(activity);
@@ -82,11 +83,7 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
 
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${place.name} added to Day $dayNumber',
-        ),
-      ),
+      SnackBar(content: Text('${place.name} added to Day $dayNumber')),
     );
   }
 }
