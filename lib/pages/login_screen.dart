@@ -13,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final AuthService _auth = AuthService();
+  bool _isLoading = false; // ✨ เพิ่มตัวแปรสำหรับโหลด เพื่อไม่ให้กดปุ่มซ้ำรัวๆ
 
   @override
   Widget build(BuildContext context) {
@@ -31,13 +32,41 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 15),
               _buildInput(_passwordController, 'Password', Icons.lock_outline, isObscure: true),
               const SizedBox(height: 25),
-              _buildButton('Log In', const Color(0xFF3B71FE), Colors.white, () async {
-                final user = await _auth.signIn(_emailController.text, _passwordController.text);
-                if (user != null) Navigator.pushReplacementNamed(context, '/trip-list-screen');
-              }),
+              
+              // ✨ แก้ไขปุ่ม Log In เพื่อให้รองรับการโชว์ Error
+              _isLoading 
+                ? const CircularProgressIndicator() 
+                : _buildButton('Log In', const Color(0xFF3B71FE), Colors.white, () async {
+                    setState(() => _isLoading = true);
+                    
+                    // เรียกใช้งาน signIn ที่เราแก้ใหม่ (รับค่าเป็นข้อความ Error)
+                    final String? errorMessage = await _auth.signIn(
+                      _emailController.text, 
+                      _passwordController.text
+                    );
+
+                    if (!mounted) return;
+                    setState(() => _isLoading = false);
+
+                    if (errorMessage == null) {
+                      // null แปลว่าไม่มี Error -> เข้าแอปได้เลย
+                      Navigator.pushReplacementNamed(context, '/trip-list-screen');
+                    } else {
+                      // มี Error -> โชว์ SnackBar แจ้งเตือน
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(errorMessage, style: const TextStyle(color: Colors.white)),
+                          backgroundColor: Colors.red.shade600,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      );
+                    }
+                  }),
+
               TextButton(onPressed: () {}, child: const Text('Forgot Password?', style: TextStyle(color: Colors.grey))),
               const SizedBox(height: 20),
-              _buildGoogleButton(),
+              _buildGoogleButton(), // ปุ่ม Google อันนี้คงไว้เหมือนเดิมเป๊ะๆ
               const SizedBox(height: 40),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -88,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
     height: 55,
     child: OutlinedButton.icon(
       onPressed: () async {
-        // 1. เรียกใช้งาน Google Sign In
+        // 1. เรียกใช้งาน Google Sign In (คงไว้ตามเดิม)
         final credential = await _auth.signInWithGoogle();
         
         if (credential != null && credential.user != null) {
@@ -98,10 +127,8 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
 
           if (isComplete) {
-            // เคยกรอกแล้ว เข้าแอปได้เลย
             Navigator.pushReplacementNamed(context, '/trip-list-screen');
           } else {
-            // ยังไม่เคยกรอก ส่งไปหน้า Complete Profile
             Navigator.pushReplacement(
               context, 
               MaterialPageRoute(builder: (_) => CompleteProfileScreen(user: credential.user!))

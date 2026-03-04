@@ -12,32 +12,26 @@ class AuthService {
   // ตรวจสอบสถานะการ Login
   Stream<User?> get userStatus => _auth.authStateChanges();
 
-  // ฟังก์ชัน Login ด้วย Google
+  // ฟังก์ชัน Login ด้วย Google (คงของเดิมไว้ 100%)
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // 2. แก้จุดนี้: ต้องใช้ตัวแปร _googleSignIn และตามด้วยคำสั่ง .signIn()
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
       if (googleUser == null) return null;
 
-      // 3. ขอ Authentication Token
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // 4. สร้าง Credential (T ตัวใหญ่ที่ accessToken และ idToken)
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // 5. Login เข้า Firebase
       return await _auth.signInWithCredential(credential);
     } catch (e) {
       print("Google Sign-In Error: $e");
       return null;
     }
   }
-
-  // --- ส่วนของ SignUp / SignIn / SignOut (ใช้ตัวแปร _googleSignIn ที่ประกาศไว้) ---
 
   Future<String?> signUp({
     required String email, 
@@ -72,13 +66,32 @@ class AuthService {
     }
   }
 
-  Future<User?> signIn(String email, String password) async {
+  // ✨ แก้ไขฟังก์ชันนี้: เปลี่ยนให้ดัก Error และส่งกลับเป็นข้อความภาษาไทย
+  Future<String?> signIn(String email, String password) async {
     try {
-      UserCredential result = await _auth.signInWithEmailAndPassword(
-          email: email, password: password);
-      return result.user;
+      if (email.isEmpty || password.isEmpty) return 'กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน';
+      
+      await _auth.signInWithEmailAndPassword(
+          email: email.trim(), password: password.trim());
+      return null; // ถ้าสำเร็จ คืนค่า null (ไม่มี Error)
+    } on FirebaseAuthException catch (e) {
+      // เช็ค Code จาก Firebase เพื่อแปลงเป็นคำไทย
+      switch (e.code) {
+        case 'user-not-found':
+          return 'ไม่พบอีเมลนี้ในระบบ';
+        case 'wrong-password':
+          return 'รหัสผ่านไม่ถูกต้อง';
+        case 'invalid-email':
+          return 'รูปแบบอีเมลไม่ถูกต้อง';
+        case 'invalid-credential':
+          return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        case 'user-disabled':
+          return 'บัญชีนี้ถูกระงับการใช้งาน';
+        default:
+          return 'เกิดข้อผิดพลาด: ${e.message}';
+      }
     } catch (e) {
-      return null;
+      return 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
     }
   }
 
