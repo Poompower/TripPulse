@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -40,8 +40,18 @@ class DatabaseService {
         endDate: data['endDate'] ?? '',
         currency: data['currency'] ?? 'USD',
         budget: (data['budget'] as num?)?.toDouble() ?? 0,
+        isFavorite: data['isFavorite'] == true,
       );
     }).toList();
+  }
+
+  Future<void> updateTripFavorite({
+    required dynamic tripId,
+    required bool isFavorite,
+  }) async {
+    await _db.collection(_collection).doc(tripId.toString()).set({
+      'isFavorite': isFavorite,
+    }, SetOptions(merge: true));
   }
 
   Future<void> deleteTrip(dynamic id) async {
@@ -76,7 +86,10 @@ class DatabaseService {
     await docRef.set(activity.toMap(), SetOptions(merge: true));
   }
 
-  Future<List<Activity>> getActivitiesByDay(dynamic tripId, int dayNumber) async {
+  Future<List<Activity>> getActivitiesByDay(
+    dynamic tripId,
+    int dayNumber,
+  ) async {
     final querySnapshot = await _db
         .collection(_collection)
         .doc(tripId.toString())
@@ -132,7 +145,7 @@ class DatabaseService {
   }
 
   Future<({Map<String, String> currencies, DateTime? updatedAt})?>
-      getCurrencyCache() async {
+  getCurrencyCache() async {
     final snapshot = await _db
         .collection(_metaCollection)
         .doc(_currencyCacheDoc)
@@ -169,8 +182,10 @@ class DatabaseService {
   }
 
   Future<bool> checkPhoneDuplicate(String phone) async {
-    final querySnapshot =
-        await _db.collection('users').where('phone', isEqualTo: phone).get();
+    final querySnapshot = await _db
+        .collection('users')
+        .where('phone', isEqualTo: phone)
+        .get();
 
     return querySnapshot.docs.isNotEmpty;
   }

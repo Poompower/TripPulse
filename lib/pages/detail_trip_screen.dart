@@ -9,6 +9,7 @@ import '../models/trip.dart';
 import '../widgets/custom_bottom_bar.dart';
 import '../widgets/weather_forecast_card.dart';
 import 'add_activity_screen.dart';
+import 'activity_detail_screen.dart';
 import 'edit_trip_screen.dart';
 
 class TripDetailScreen extends StatefulWidget {
@@ -359,7 +360,14 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   Widget _buildActivityItem(Activity activity) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () {},
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ActivityDetailScreen(activity: activity),
+          ),
+        );
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(

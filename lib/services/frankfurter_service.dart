@@ -163,4 +163,54 @@ class FrankfurterService {
           .toList();
     }
   }
+
+  Future<double> fetchExchangeRate({
+    required String from,
+    required String to,
+  }) async {
+    if (from == to) return 1.0;
+
+    const endpoint = '/latest';
+    developer.log(
+      'Request start GET $endpoint from=$from to=$to',
+      name: 'FrankfurterAPI',
+    );
+
+    final response = await _dio.get(
+      endpoint,
+      queryParameters: {'from': from, 'to': to},
+    );
+
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw Exception('Unexpected latest rates response format');
+    }
+
+    final rates = data['rates'];
+    if (rates is! Map<String, dynamic>) {
+      throw Exception('Missing rates in latest rates response');
+    }
+
+    final rateRaw = rates[to];
+    if (rateRaw is! num) {
+      throw Exception('Missing rate for $to');
+    }
+
+    final rate = rateRaw.toDouble();
+    developer.log('Resolved rate $from->$to = $rate', name: 'FrankfurterAPI');
+    return rate;
+  }
+
+  Future<double> convertAmount({
+    required double amount,
+    required String from,
+    required String to,
+  }) async {
+    if (amount.isNaN || amount.isInfinite) {
+      throw Exception('Invalid amount');
+    }
+
+    final rate = await fetchExchangeRate(from: from, to: to);
+    return amount * rate;
+  }
 }

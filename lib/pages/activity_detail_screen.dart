@@ -55,6 +55,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       title: _titleCtrl.text,
       location: _locationCtrl.text.isNotEmpty ? _locationCtrl.text : null,
       time: _timeCtrl.text.isNotEmpty ? _timeCtrl.text : null,
+      imageUrl: _activity.imageUrl,
+      category: _activity.category,
     );
 
     await DatabaseService().insertActivity(updatedActivity);
@@ -64,28 +66,33 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     });
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Activity updated successfully')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Activity updated successfully')),
+      );
     }
   }
 
   void _deleteActivity() async {
+    final rootContext = context;
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: rootContext,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Activity?'),
         content: const Text('Are you sure you want to delete this activity?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               await DatabaseService().deleteActivity(
                 _activity.tripId,
                 _activity.id,
               );
-              if (mounted) {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context, true); // Return to previous screen
-              }
+              if (!rootContext.mounted || !dialogContext.mounted) return;
+              Navigator.pop(dialogContext); // Close dialog
+              Navigator.pop(rootContext, true); // Return to previous screen
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -101,12 +108,21 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-        title: const Text('Itinerary Details', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Itinerary Details',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         actions: [
           if (!_isEditing)
-            IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.black), onPressed: () => setState(() => _isEditing = true)),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.black),
+              onPressed: () => setState(() => _isEditing = true),
+            ),
         ],
       ),
       body: Column(
@@ -119,13 +135,31 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[200]!)),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Day', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500)),
+                        const Text(
+                          'Day',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                         const SizedBox(height: 4),
-                        Text('Day ${_activity.dayNumber}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+                        Text(
+                          'Day ${_activity.dayNumber}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -142,9 +176,19 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A1A1A), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A1A1A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
                   onPressed: _saveChanges,
-                  child: const Text('Save Changes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Save Changes',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             )
@@ -155,9 +199,19 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red[100], foregroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[100],
+                    foregroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
                   onPressed: _deleteActivity,
-                  child: const Text('Delete Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Delete Activity',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
@@ -175,11 +229,16 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         if (_activity.location != null && _activity.location!.isNotEmpty)
           Column(
             children: [
-              _buildDetailField('Location', _activity.location!, Icons.location_on),
+              _buildDetailField(
+                'Location',
+                _activity.location!,
+                Icons.location_on,
+              ),
               const SizedBox(height: 16),
             ],
           ),
-        if (_activity.time != null && _activity.time!.isNotEmpty) _buildDetailField('Time', _activity.time!, Icons.schedule),
+        if (_activity.time != null && _activity.time!.isNotEmpty)
+          _buildDetailField('Time', _activity.time!, Icons.schedule),
       ],
     );
   }
@@ -195,14 +254,30 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Time', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+            const Text(
+              'Time',
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            ),
             const SizedBox(height: 8),
             InkWell(
               onTap: _selectTime,
               child: IgnorePointer(
                 child: TextField(
                   controller: _timeCtrl,
-                  decoration: InputDecoration(hintText: 'Select time', hintStyle: TextStyle(color: Colors.grey[400]), prefixIcon: const Icon(Icons.schedule_outlined, color: Colors.blue), filled: true, fillColor: const Color(0xFFF9FAFB), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                  decoration: InputDecoration(
+                    hintText: 'Select time',
+                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    prefixIcon: const Icon(
+                      Icons.schedule_outlined,
+                      color: Colors.blue,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -215,7 +290,11 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   Widget _buildDetailField(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[200]!)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
       child: Row(
         children: [
           Icon(icon, color: Colors.blue, size: 24),
@@ -224,9 +303,22 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.w500)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -235,15 +327,32 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     );
   }
 
-  Widget _buildEditField(String label, TextEditingController controller, {IconData? icon}) {
+  Widget _buildEditField(
+    String label,
+    TextEditingController controller, {
+    IconData? icon,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          decoration: InputDecoration(hintText: 'Enter $label', hintStyle: TextStyle(color: Colors.grey[400]), prefixIcon: icon != null ? Icon(icon, color: Colors.blue) : null, filled: true, fillColor: const Color(0xFFF9FAFB), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+          decoration: InputDecoration(
+            hintText: 'Enter $label',
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            prefixIcon: icon != null ? Icon(icon, color: Colors.blue) : null,
+            filled: true,
+            fillColor: const Color(0xFFF9FAFB),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
         ),
       ],
     );

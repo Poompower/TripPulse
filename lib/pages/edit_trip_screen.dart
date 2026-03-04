@@ -40,6 +40,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
   Timer? _destinationDebounce;
   bool _isSearchingDestination = false;
   bool _destinationEdited = false;
+  bool _isSavingTrip = false;
 
   @override
   void initState() {
@@ -48,7 +49,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
     _destCtrl.text = widget.trip.destination;
     _startCtrl.text = widget.trip.startDate;
     _endCtrl.text = widget.trip.endDate;
-    _budgetCtrl.text = widget.trip.budget.toString();
+    _budgetCtrl.text = widget.trip.budget.toStringAsFixed(2);
     _selectedCurrency = widget.trip.currency;
 
     if (widget.trip.city != null &&
@@ -66,6 +67,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
       );
     }
 
+    _setInitialBudgetInThb();
     _loadCurrencies();
   }
 
@@ -247,6 +249,54 @@ class _EditTripScreenState extends State<EditTripScreen> {
     );
   }
 
+  Future<void> _setInitialBudgetInThb() async {
+    if (widget.trip.budget <= 0) {
+      _budgetCtrl.text = widget.trip.budget.toStringAsFixed(2);
+      return;
+    }
+
+    if (widget.trip.currency == 'THB') {
+      _budgetCtrl.text = widget.trip.budget.toStringAsFixed(2);
+      return;
+    }
+
+    try {
+      final budgetThb = await _frankfurterService.convertAmount(
+        amount: widget.trip.budget,
+        from: widget.trip.currency,
+        to: 'THB',
+      );
+      if (!mounted) return;
+      _budgetCtrl.text = budgetThb.toStringAsFixed(2);
+    } catch (e, st) {
+      developer.log(
+        'Failed to convert existing budget to THB. Keeping original value.',
+        name: 'EditTrip',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  Future<double> _convertBudgetFromThb({
+    required double budgetThb,
+    required String targetCurrency,
+  }) async {
+    if (targetCurrency == 'THB') return budgetThb;
+
+    final converted = await _frankfurterService.convertAmount(
+      amount: budgetThb,
+      from: 'THB',
+      to: targetCurrency,
+    );
+
+    developer.log(
+      'Converted budget THB=$budgetThb to $targetCurrency=$converted',
+      name: 'EditTrip',
+    );
+    return converted;
+  }
+
   Widget _buildDestinationInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,8 +429,8 @@ class _EditTripScreenState extends State<EditTripScreen> {
                   _buildCurrencySelector(),
                   const SizedBox(height: 24),
                   CustomInputField(
-                    label: 'Budget',
-                    hint: 'e.g., 5000',
+                    label: 'Budget (THB)',
+                    hint: 'e.g., 5000 (Thai Baht)',
                     controller: _budgetCtrl,
                   ),
                 ],
@@ -401,69 +451,113 @@ class _EditTripScreenState extends State<EditTripScreen> {
                   ),
                   elevation: 0,
                 ),
-                onPressed: () async {
-                  if (_titleCtrl.text.isEmpty) {
-                    _showErrorDialog('Please enter trip title');
-                    return;
-                  }
-                  if (_destCtrl.text.isEmpty) {
-                    _showErrorDialog('Please enter destination');
-                    return;
-                  }
-                  if (_destinationEdited && _selectedDestination == null) {
-                    _showErrorDialog(
-                      'Please select a destination from suggestions',
-                    );
-                    return;
-                  }
-                  if (_startCtrl.text.isEmpty) {
-                    _showErrorDialog('Please select start date');
-                    return;
-                  }
-                  if (_endCtrl.text.isEmpty) {
-                    _showErrorDialog('Please select end date');
-                    return;
-                  }
+                onPressed: _isSavingTrip
+                    ? null
+                    : () async {
+                        if (_titleCtrl.text.isEmpty) {
+                          _showErrorDialog('Please enter trip title');
+                          return;
+                        }
+                        if (_destCtrl.text.isEmpty) {
+                          _showErrorDialog('Please enter destination');
+                          return;
+                        }
+                        if (_destinationEdited &&
+                            _selectedDestination == null) {
+                          _showErrorDialog(
+                            'Please select a destination from suggestions',
+                          );
+                          return;
+                        }
+                        if (_startCtrl.text.isEmpty) {
+                          _showErrorDialog('Please select start date');
+                          return;
+                        }
+                        if (_endCtrl.text.isEmpty) {
+                          _showErrorDialog('Please select end date');
+                          return;
+                        }
 
-                  try {
-                    final startDate = DateFormat(
-                      'MMM dd, yyyy',
-                    ).parse(_startCtrl.text);
-                    final endDate = DateFormat(
-                      'MMM dd, yyyy',
-                    ).parse(_endCtrl.text);
-                    if (endDate.isBefore(startDate)) {
-                      _showErrorDialog('End date must be after start date');
-                      return;
-                    }
-                  } catch (_) {
-                    _showErrorDialog('Invalid date format');
-                    return;
-                  }
+                        try {
+                          final startDate = DateFormat(
+                            'MMM dd, yyyy',
+                          ).parse(_startCtrl.text);
+                          final endDate = DateFormat(
+                            'MMM dd, yyyy',
+                          ).parse(_endCtrl.text);
+                          if (endDate.isBefore(startDate)) {
+                            _showErrorDialog(
+                              'End date must be after start date',
+                            );
+                            return;
+                          }
+                        } catch (_) {
+                          _showErrorDialog('Invalid date format');
+                          return;
+                        }
 
-                  final destination = _selectedDestination;
+                        final budgetThb = double.tryParse(
+                          _budgetCtrl.text.replaceAll(',', '').trim(),
+                        );
+                        if (budgetThb == null || budgetThb < 0) {
+                          _showErrorDialog(
+                            'Please enter a valid budget in THB',
+                          );
+                          return;
+                        }
 
-                  final updatedTrip = Trip(
-                    id: widget.trip.id,
-                    title: _titleCtrl.text,
-                    destination: destination?.displayName ?? _destCtrl.text,
-                    city: destination?.city ?? widget.trip.city,
-                    country: destination?.country ?? widget.trip.country,
-                    countryCode:
-                        destination?.countryCode ?? widget.trip.countryCode,
-                    lat: destination?.lat ?? widget.trip.lat,
-                    lon: destination?.lon ?? widget.trip.lon,
-                    startDate: _startCtrl.text,
-                    endDate: _endCtrl.text,
-                    currency: _selectedCurrency,
-                    budget: double.tryParse(_budgetCtrl.text) ?? 0,
-                  );
+                        final destination = _selectedDestination;
+                        setState(() => _isSavingTrip = true);
 
-                  await DatabaseService().insertTrip(updatedTrip);
+                        try {
+                          final convertedBudget = await _convertBudgetFromThb(
+                            budgetThb: budgetThb,
+                            targetCurrency: _selectedCurrency,
+                          );
 
-                  if (!context.mounted) return;
-                  Navigator.pop(context, true);
-                },
+                          final updatedTrip = Trip(
+                            id: widget.trip.id,
+                            title: _titleCtrl.text,
+                            destination:
+                                destination?.displayName ?? _destCtrl.text,
+                            city: destination?.city ?? widget.trip.city,
+                            country:
+                                destination?.country ?? widget.trip.country,
+                            countryCode:
+                                destination?.countryCode ??
+                                widget.trip.countryCode,
+                            lat: destination?.lat ?? widget.trip.lat,
+                            lon: destination?.lon ?? widget.trip.lon,
+                            startDate: _startCtrl.text,
+                            endDate: _endCtrl.text,
+                            currency: _selectedCurrency,
+                            budget: convertedBudget,
+                            isFavorite: widget.trip.isFavorite,
+                          );
+
+                          await DatabaseService().insertTrip(updatedTrip);
+                        } catch (e, st) {
+                          developer.log(
+                            'Failed to convert/save trip budget during edit',
+                            name: 'EditTrip',
+                            error: e,
+                            stackTrace: st,
+                          );
+                          if (mounted) {
+                            _showErrorDialog(
+                              'Unable to convert THB to $_selectedCurrency now. Please try again.',
+                            );
+                          }
+                          return;
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isSavingTrip = false);
+                          }
+                        }
+
+                        if (!context.mounted) return;
+                        Navigator.pop(context, true);
+                      },
                 child: const Text(
                   'Save Changes',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
