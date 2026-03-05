@@ -12,6 +12,7 @@ class Trip {
   final String currency;
   final double budget;
   final bool isFavorite;
+  final String userId;
 
   Trip({
     this.id,
@@ -27,6 +28,7 @@ class Trip {
     required this.currency,
     required this.budget,
     this.isFavorite = false,
+    this.userId = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -43,6 +45,7 @@ class Trip {
       'currency': currency,
       'budget': budget,
       'isFavorite': isFavorite,
+      'userId': userId,
     };
   }
 }

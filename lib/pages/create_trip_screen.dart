@@ -10,6 +10,7 @@ import '../services/database_service.dart';
 import '../services/frankfurter_service.dart';
 import '../widgets/currency_picker_bottom_sheet.dart';
 import '../widgets/custom_input.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateTripScreen extends StatefulWidget {
   const CreateTripScreen({super.key});
@@ -443,6 +444,12 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                           return;
                         }
 
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) {
+                          _showErrorDialog('Please Login');
+                          return;
+                        }
+
                         final destination = _selectedDestination!;
                         setState(() => _isSavingTrip = true);
 
@@ -465,6 +472,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                               endDate: _endCtrl.text,
                               currency: _selectedCurrency,
                               budget: convertedBudget,
+                              userId: user.uid,
                             ),
                           );
                         } catch (e, st) {

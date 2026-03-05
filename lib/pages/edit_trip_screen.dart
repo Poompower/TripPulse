@@ -10,6 +10,7 @@ import '../services/database_service.dart';
 import '../services/frankfurter_service.dart';
 import '../widgets/currency_picker_bottom_sheet.dart';
 import '../widgets/custom_input.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class EditTripScreen extends StatefulWidget {
   final Trip trip;
@@ -506,6 +507,12 @@ class _EditTripScreenState extends State<EditTripScreen> {
                           return;
                         }
 
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) {
+                          _showErrorDialog('Please Login');
+                          return;
+                        }
+
                         final destination = _selectedDestination;
                         setState(() => _isSavingTrip = true);
 
@@ -533,6 +540,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
                             currency: _selectedCurrency,
                             budget: convertedBudget,
                             isFavorite: widget.trip.isFavorite,
+                            userId: user.uid,
                           );
 
                           await DatabaseService().insertTrip(updatedTrip);

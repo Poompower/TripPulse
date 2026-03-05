@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/activity.dart';
 import '../models/trip.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -21,10 +21,13 @@ class DatabaseService {
 
     await docRef.set(trip.toMap(), SetOptions(merge: true));
   }
-
+  
   Future<List<Trip>> trips() async {
-    final querySnapshot = await _db.collection(_collection).get();
-
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return [];
+    final querySnapshot = await _db.collection(_collection)
+      .where('userId', isEqualTo: user.uid) 
+      .get();
     return querySnapshot.docs.map((doc) {
       final data = doc.data();
       return Trip(
@@ -41,6 +44,7 @@ class DatabaseService {
         currency: data['currency'] ?? 'USD',
         budget: (data['budget'] as num?)?.toDouble() ?? 0,
         isFavorite: data['isFavorite'] == true,
+        userId: data['userId'] ?? '',
       );
     }).toList();
   }
