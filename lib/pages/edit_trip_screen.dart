@@ -10,6 +10,7 @@ import '../services/database_service.dart';
 import '../services/frankfurter_service.dart';
 import '../widgets/currency_picker_bottom_sheet.dart';
 import '../widgets/custom_input.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class EditTripScreen extends StatefulWidget {
   final Trip trip;
@@ -440,7 +441,11 @@ class _EditTripScreenState extends State<EditTripScreen> {
                     _showErrorDialog('Invalid date format');
                     return;
                   }
-
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null) {
+                    _showErrorDialog('กรุณาล็อกอินก่อนสร้างทริป');
+                    return;
+                  }
                   final destination = _selectedDestination;
 
                   final updatedTrip = Trip(
@@ -457,6 +462,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
                     endDate: _endCtrl.text,
                     currency: _selectedCurrency,
                     budget: double.tryParse(_budgetCtrl.text) ?? 0,
+                    userId: user.uid,
                   );
 
                   await DatabaseService().insertTrip(updatedTrip);

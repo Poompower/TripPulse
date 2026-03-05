@@ -11,6 +11,7 @@ class Trip {
   final String endDate;
   final String currency;
   final double budget;
+  final String userId;
 
   Trip({
     this.id,
@@ -25,6 +26,7 @@ class Trip {
     required this.endDate,
     required this.currency,
     required this.budget,
+    required this.userId,
   });
 
   Map<String, dynamic> toMap() {
@@ -40,6 +42,7 @@ class Trip {
       'endDate': endDate,
       'currency': currency,
       'budget': budget,
+      'userId': userId,
     };
   }
 }
