@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../models/activity.dart';
-import '../models/trip.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../itenaries/models/activity.dart';
+import '../models/trip.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -112,6 +112,8 @@ class DatabaseService {
         time: data['time'],
         imageUrl: data['imageUrl'],
         category: data['category'],
+        lat: (data['lat'] as num?)?.toDouble(),
+        lon: (data['lon'] as num?)?.toDouble(),
       );
     }).toList();
   }
@@ -135,6 +137,8 @@ class DatabaseService {
         time: data['time'],
         imageUrl: data['imageUrl'],
         category: data['category'],
+        lat: (data['lat'] as num?)?.toDouble(),
+        lon: (data['lon'] as num?)?.toDouble(),
       );
     }).toList();
   }

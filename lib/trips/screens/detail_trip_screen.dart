@@ -4,12 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../models/activity.dart';
+import '../../itenaries/models/activity.dart';
+import '../../itenaries/screens/activity_detail_screen.dart';
+import '../../itenaries/screens/add_activity_screen.dart';
+import '../../itenaries/screens/itinerary_detail_screen.dart';
+import '../../widgets/custom_bottom_bar.dart';
 import '../models/trip.dart';
-import '../widgets/custom_bottom_bar.dart';
 import '../widgets/weather_forecast_card.dart';
-import 'add_activity_screen.dart';
-import 'activity_detail_screen.dart';
 import 'edit_trip_screen.dart';
 
 class TripDetailScreen extends StatefulWidget {
@@ -54,6 +55,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               time: data['time']?.toString(),
               imageUrl: data['imageUrl']?.toString(),
               category: data['category']?.toString(),
+              lat: (data['lat'] as num?)?.toDouble(),
+              lon: (data['lon'] as num?)?.toDouble(),
             );
           }).toList();
 
@@ -255,40 +258,63 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8EEFF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$dayNumber',
-                  style: const TextStyle(
-                    color: Color(0xFF2F80ED),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22 / 1.4,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('EEEE').format(date),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ItineraryDetailScreen(
+                          trip: _trip,
+                          dayNumber: dayNumber,
+                        ),
                       ),
-                    ),
-                    Text(
-                      DateFormat('M/d/yyyy').format(date),
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                    ),
-                  ],
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8EEFF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$dayNumber',
+                          style: const TextStyle(
+                            color: Color(0xFF2F80ED),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22 / 1.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('EEEE').format(date),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              DateFormat('M/d/yyyy').format(date),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Container(

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../models/trip.dart';
-import '../pages/create_trip_screen.dart';
-import '../pages/detail_trip_screen.dart';
-import '../pages/edit_trip_screen.dart';
-import '../services/database_service.dart';
-import '../widgets/custom_bottom_bar.dart';
+import '../../widgets/custom_bottom_bar.dart';
 import '../widgets/trip_card.dart';
+import 'create_trip_screen.dart';
+import 'detail_trip_screen.dart';
+import 'edit_trip_screen.dart';
+import '../services/database_service.dart';
 
 class TripListScreen extends StatefulWidget {
   const TripListScreen({super.key});

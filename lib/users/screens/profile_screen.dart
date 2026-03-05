@@ -4,9 +4,10 @@ import 'dart:typed_data'; // เพิ่มตัวนี้สำหรับ
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/database_service.dart';
+
+import '../../trips/services/database_service.dart';
+import '../../widgets/custom_bottom_bar.dart';
 import '../services/auth_service.dart';
-import '../widgets/custom_bottom_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

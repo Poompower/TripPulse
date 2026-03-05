@@ -3,14 +3,14 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/trip.dart';
-import '../places/services/places_service.dart';
+import '../../places/services/places_service.dart';
 import '../services/database_service.dart';
 import '../services/frankfurter_service.dart';
 import '../widgets/currency_picker_bottom_sheet.dart';
 import '../widgets/custom_input.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class EditTripScreen extends StatefulWidget {
   final Trip trip;

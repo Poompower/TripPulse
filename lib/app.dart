@@ -1,15 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
-import 'models/trip.dart';
-import 'pages/create_trip_screen.dart';
-import 'pages/detail_trip_screen.dart';
-import 'pages/edit_trip_screen.dart';
-import 'pages/login_screen.dart';
-import 'pages/profile_screen.dart';
-import 'pages/signup_screen.dart';
-import 'pages/trip_list_screen.dart';
+import 'maps/screens/general_map_screen.dart';
 import 'places/screens/places_search_screen.dart';
+import 'trips/models/trip.dart';
+import 'trips/screens/create_trip_screen.dart';
+import 'trips/screens/detail_trip_screen.dart';
+import 'trips/screens/edit_trip_screen.dart';
+import 'trips/screens/trip_list_screen.dart';
+import 'users/screens/login_screen.dart';
+import 'users/screens/profile_screen.dart';
+import 'users/screens/signup_screen.dart';
 
 class TripPulseApp extends StatelessWidget {
   const TripPulseApp({super.key});
@@ -65,13 +66,17 @@ class TripPulseApp extends StatelessWidget {
                 );
 
               case '/general-map-screen':
-                return MaterialPageRoute(
-                  builder: (_) => Scaffold(
-                    appBar: AppBar(title: const Text('Map')),
-                    body: const Center(
-                      child: Text('General Map Screen (not implemented)'),
+                final args = settings.arguments;
+                if (args is GeneralMapArgs) {
+                  return MaterialPageRoute(
+                    builder: (_) => GeneralMapScreen(
+                      trip: args.trip,
+                      dayNumber: args.dayNumber,
                     ),
-                  ),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (_) => const GeneralMapScreen(),
                 );
 
               default:

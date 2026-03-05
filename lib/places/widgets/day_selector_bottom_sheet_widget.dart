@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/activity.dart';
-import '../../models/trip.dart';
-import '../../services/database_service.dart';
+import '../../itenaries/models/activity.dart';
+import '../../trips/models/trip.dart';
+import '../../trips/services/database_service.dart';
 import '../models/place.dart';
+import '../services/wikimedia_image_service.dart';
 
 class DaySelectorBottomSheetWidget extends StatelessWidget {
   final Place place;
@@ -34,6 +35,8 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxListHeight = MediaQuery.of(context).size.height * 0.55;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -48,14 +51,23 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(place.name, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
-            for (int day = 1; day <= totalDays; day++)
-              ListTile(
-                leading: const Icon(Icons.calendar_today),
-                title: Text('Day $day'),
-                onTap: () async {
-                  await _addActivity(context, day);
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxListHeight),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: totalDays,
+                itemBuilder: (context, index) {
+                  final day = index + 1;
+                  return ListTile(
+                    leading: const Icon(Icons.calendar_today),
+                    title: Text('Day $day'),
+                    onTap: () async {
+                      await _addActivity(context, day);
+                    },
+                  );
                 },
               ),
+            ),
           ],
         ),
       ),
@@ -65,16 +77,20 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
   // Insert activity into database.
   Future<void> _addActivity(BuildContext context, int dayNumber) async {
     final db = DatabaseService();
+    final resolvedImageUrl =
+        await WikimediaImageService.instance.resolveImageUrl(place);
 
     final activity = Activity(
       id: null,
       tripId: trip.id,
       dayNumber: dayNumber,
       title: place.name,
-      location: trip.destination,
+      location: place.description,
       time: '',
-      imageUrl: place.imageUrl,
+      imageUrl: resolvedImageUrl ?? place.imageUrl,
       category: place.category,
+      lat: place.lat,
+      lon: place.lon,
     );
 
     await db.insertActivity(activity);

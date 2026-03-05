@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/place.dart';
-import '../../services/location_service.dart';
+import '../../maps/services/location_service.dart';
 
 typedef DestinationSuggestion = ({
   String displayName,

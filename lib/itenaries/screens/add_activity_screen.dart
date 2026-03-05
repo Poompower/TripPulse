@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../models/activity.dart';
-import '../services/database_service.dart';
+import '../../trips/services/database_service.dart';
 
 class AddActivityScreen extends StatefulWidget {
   final dynamic tripId;

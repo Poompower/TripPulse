@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../models/activity.dart';
-import '../services/database_service.dart';
+import '../../trips/services/database_service.dart';
 
 class ActivityDetailScreen extends StatefulWidget {
   final Activity activity;
@@ -57,6 +58,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       time: _timeCtrl.text.isNotEmpty ? _timeCtrl.text : null,
       imageUrl: _activity.imageUrl,
       category: _activity.category,
+      lat: _activity.lat,
+      lon: _activity.lon,
     );
 
     await DatabaseService().insertActivity(updatedActivity);

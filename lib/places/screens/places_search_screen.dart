@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../models/trip.dart';
-import '../../services/database_service.dart';
+import '../../trips/models/trip.dart';
+import '../../trips/services/database_service.dart';
 import '../../widgets/custom_bottom_bar.dart';
 import '../models/place.dart';
 import '../services/places_service.dart';

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/database_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../trips/services/database_service.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final User user; // รับข้อมูล User ที่ได้จาก Google

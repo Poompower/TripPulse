@@ -7,6 +7,8 @@ class Activity {
   final String? time;
   final String? imageUrl;
   final String? category;
+  final double? lat;
+  final double? lon;
 
   Activity({
     this.id,
@@ -17,6 +19,8 @@ class Activity {
     this.time,
     this.imageUrl,
     this.category,
+    this.lat,
+    this.lon,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +33,8 @@ class Activity {
       'time': time,
       'imageUrl': imageUrl,
       'category': category,
+      'lat': lat,
+      'lon': lon,
     };
   }
 
@@ -42,6 +48,8 @@ class Activity {
       time: map['time'],
       imageUrl: map['imageUrl'],
       category: map['category'],
+      lat: (map['lat'] as num?)?.toDouble(),
+      lon: (map['lon'] as num?)?.toDouble(),
     );
   }
 }
