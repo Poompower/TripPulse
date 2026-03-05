@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'dart:developer' as developer;
 import 'database_service.dart';
 
 class AuthService {
@@ -15,20 +16,53 @@ class AuthService {
   // ฟังก์ชัน Login ด้วย Google (คงของเดิมไว้ 100%)
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      developer.log('GoogleAuth signup/login start', name: 'AuthService');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
-      if (googleUser == null) return null;
+      if (googleUser == null) {
+        developer.log(
+          'GoogleAuth cancelled by user at account picker',
+          name: 'AuthService',
+        );
+        return null;
+      }
+
+      developer.log(
+        'GoogleAuth account selected: ${googleUser.email}',
+        name: 'AuthService',
+      );
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      developer.log(
+        'GoogleAuth token received (idToken=${googleAuth.idToken != null}, accessToken=${googleAuth.accessToken != null})',
+        name: 'AuthService',
+      );
 
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      return await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
+      developer.log(
+        'GoogleAuth Firebase sign-in success: uid=${userCredential.user?.uid}, isNewUser=${userCredential.additionalUserInfo?.isNewUser}',
+        name: 'AuthService',
+      );
+      return userCredential;
+    } on FirebaseAuthException catch (e, st) {
+      developer.log(
+        'GoogleAuth FirebaseAuthException code=${e.code}, message=${e.message}',
+        name: 'AuthService',
+        error: e,
+        stackTrace: st,
+      );
+      return null;
     } catch (e) {
-      print("Google Sign-In Error: $e");
+      developer.log(
+        'GoogleAuth unexpected error',
+        name: 'AuthService',
+        error: e,
+      );
       return null;
     }
   }
