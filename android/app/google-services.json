@@ -12,7 +12,20 @@
           "package_name": "com.example.trippulse"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "482504660458-iflu6dk7lvseqbvv7u8fvrs19si7eeqf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.trippulse",
+            "certificate_hash": "fdaff5922bc0f4c3d53e23e4c638c49920409b2a"
+          }
+        },
+        {
+          "client_id": "482504660458-hoapem7e3hl8scq83g74c48oeqfm0c7o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB-WMfYmMGfwFDN8iY6aeos7b5qWJ9_06I"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "482504660458-hoapem7e3hl8scq83g74c48oeqfm0c7o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

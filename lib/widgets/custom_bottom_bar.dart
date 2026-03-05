@@ -1,31 +1,20 @@
+// ไฟล์: lib/widgets/custom_bottom_bar.dart
+
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Custom bottom navigation bar for TripPulse application
-/// Implements thumb-reachable navigation with Material 3 design
-/// Supports primary navigation between core screens
 class CustomBottomBar extends StatelessWidget {
-  /// Current selected index
   final int currentIndex;
-
-  /// Callback when navigation item is tapped
   final ValueChanged<int> onTap;
-
-  /// Navigation bar variant
   final BottomBarVariant variant;
-
-  /// Whether to show labels
   final bool showLabels;
-
-  /// Custom background color (optional, uses theme if null)
   final Color? backgroundColor;
-
-  /// Custom selected item color (optional, uses theme if null)
   final Color? selectedItemColor;
-
-  /// Custom unselected item color (optional, uses theme if null)
   final Color? unselectedItemColor;
-
-  /// Elevation of the bottom bar
   final double elevation;
 
   const CustomBottomBar({
@@ -52,15 +41,61 @@ class CustomBottomBar extends StatelessWidget {
     }
   }
 
-  /// Builds Material 3 NavigationBar with indicator
+  // ----------------------------------------------------------------
+  // ฟังก์ชันใหม่: ดึงรูปโปรไฟล์แบบ Base64 มาทำเป็น Icon
+  // ----------------------------------------------------------------
+  Widget _buildProfileIcon(BuildContext context, {required bool isSelected}) {
+    final user = FirebaseAuth.instance.currentUser;
+    
+    // ถ้ายังไม่ได้ Login ให้ใช้ Icon ธรรมดา
+    if (user == null) {
+      return Icon(isSelected ? Icons.person : Icons.person_outline);
+    }
+
+    // ใช้ StreamBuilder เพื่อให้รูปเปลี่ยนทันทีที่มีการอัปเดตใน Database
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          final base64String = data?['photoBase64'] as String?;
+          
+          if (base64String != null && base64String.isNotEmpty) {
+            try {
+              Uint8List imageBytes = base64Decode(base64String);
+              return Container(
+                width: 28, // ขนาดรูปโปรไฟล์ใน Nav Bar
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  // ถ้าถูกเลือก (Active) ให้มีขอบสีวงกลมล้อมรอบ
+                  border: isSelected 
+                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) 
+                      : null,
+                  image: DecorationImage(
+                    image: MemoryImage(imageBytes),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              );
+            } catch (e) {
+              // ถ้าแปลงรูปพัง ให้หลุดไปโชว์ Icon ปกติด้านล่าง
+            }
+          }
+        }
+        // รูปเริ่มต้น (Fallback) ถ้ายังไม่มีรูป
+        return Icon(isSelected ? Icons.person : Icons.person_outline);
+      },
+    );
+  }
+
   Widget _buildMaterial3NavigationBar(BuildContext context) {
     final theme = Theme.of(context);
 
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
-      backgroundColor:
-          backgroundColor ?? theme.navigationBarTheme.backgroundColor,
+      backgroundColor: backgroundColor ?? theme.navigationBarTheme.backgroundColor,
       elevation: elevation,
       height: 80,
       labelBehavior: showLabels
@@ -70,20 +105,15 @@ class CustomBottomBar extends StatelessWidget {
     );
   }
 
-  /// Builds classic BottomNavigationBar
   Widget _buildClassicBottomNavigationBar(BuildContext context) {
     final theme = Theme.of(context);
 
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      backgroundColor:
-          backgroundColor ?? theme.bottomNavigationBarTheme.backgroundColor,
-      selectedItemColor:
-          selectedItemColor ?? theme.bottomNavigationBarTheme.selectedItemColor,
-      unselectedItemColor:
-          unselectedItemColor ??
-          theme.bottomNavigationBarTheme.unselectedItemColor,
+      backgroundColor: backgroundColor ?? theme.bottomNavigationBarTheme.backgroundColor,
+      selectedItemColor: selectedItemColor ?? theme.bottomNavigationBarTheme.selectedItemColor,
+      unselectedItemColor: unselectedItemColor ?? theme.bottomNavigationBarTheme.unselectedItemColor,
       type: BottomNavigationBarType.fixed,
       elevation: elevation,
       showSelectedLabels: showLabels,
@@ -94,7 +124,6 @@ class CustomBottomBar extends StatelessWidget {
     );
   }
 
-  /// Builds floating navigation bar with rounded corners
   Widget _buildFloatingNavigationBar(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -129,10 +158,7 @@ class CustomBottomBar extends StatelessWidget {
     );
   }
 
-  /// Builds navigation destinations for Material 3 NavigationBar
-  List<NavigationDestination> _buildNavigationDestinations(
-    BuildContext context,
-  ) {
+  List<NavigationDestination> _buildNavigationDestinations(BuildContext context) {
     return [
       const NavigationDestination(
         icon: Icon(Icons.explore_outlined),
@@ -152,48 +178,46 @@ class CustomBottomBar extends StatelessWidget {
         label: 'Map',
         tooltip: 'View map',
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.person_outline),
-        selectedIcon: Icon(Icons.person),
+      NavigationDestination(
+        // เรียกใช้ฟังก์ชันรูปโปรไฟล์ตรงนี้
+        icon: _buildProfileIcon(context, isSelected: false),
+        selectedIcon: _buildProfileIcon(context, isSelected: true),
         label: 'Profile',
         tooltip: 'User profile',
       ),
     ];
   }
 
-  /// Builds items for classic BottomNavigationBar
-  List<BottomNavigationBarItem> _buildBottomNavigationBarItems(
-    BuildContext context,
-  ) {
-    return const [
-      BottomNavigationBarItem(
+  List<BottomNavigationBarItem> _buildBottomNavigationBarItems(BuildContext context) {
+    return [
+      const BottomNavigationBarItem(
         icon: Icon(Icons.explore_outlined),
         activeIcon: Icon(Icons.explore),
         label: 'Trips',
         tooltip: 'View all trips',
       ),
-      BottomNavigationBarItem(
+      const BottomNavigationBarItem(
         icon: Icon(Icons.search_outlined),
         activeIcon: Icon(Icons.search),
         label: 'Search',
         tooltip: 'Search places',
       ),
-      BottomNavigationBarItem(
+      const BottomNavigationBarItem(
         icon: Icon(Icons.map_outlined),
         activeIcon: Icon(Icons.map),
         label: 'Map',
         tooltip: 'View map',
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.person_outline),
-        activeIcon: Icon(Icons.person),
+        // เรียกใช้ฟังก์ชันรูปโปรไฟล์ตรงนี้
+        icon: _buildProfileIcon(context, isSelected: false),
+        activeIcon: _buildProfileIcon(context, isSelected: true),
         label: 'Profile',
         tooltip: 'User profile',
       ),
     ];
   }
 
-  /// Helper method to navigate to the appropriate screen based on index
   static void navigateToIndex(BuildContext context, int index) {
     switch (index) {
       case 0:
@@ -203,18 +227,14 @@ class CustomBottomBar extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/places-search-screen');
         break;
       case 2:
-        // Map view - navigate to general map screen
         Navigator.pushReplacementNamed(context, '/general-map-screen');
         break;
       case 3:
-        // Profile/Settings - would need to be implemented
-        // For now, navigate to trip list
         Navigator.pushReplacementNamed(context, '/profile-screen');
         break;
     }
   }
 
-  /// Helper method to get current index based on route
   static int getIndexFromRoute(String? routeName) {
     switch (routeName) {
       case '/trip-list-screen':
@@ -223,7 +243,7 @@ class CustomBottomBar extends StatelessWidget {
         return 1;
       case '/general-map-screen':
         return 2;
-      case '/profile-screen': // เพิ่มเคสนี้
+      case '/profile-screen':
         return 3;
       case '/trip-detail-screen':
       case '/day-itinerary-screen':
@@ -234,14 +254,8 @@ class CustomBottomBar extends StatelessWidget {
   }
 }
 
-/// Enum defining bottom bar variants
 enum BottomBarVariant {
-  /// Material 3 NavigationBar with indicator
   material3,
-
-  /// Classic BottomNavigationBar
   classic,
-
-  /// Floating navigation bar with rounded corners
   floating,
 }
