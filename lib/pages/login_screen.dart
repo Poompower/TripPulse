@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 80.0),
           child: Column(
             children: [
-              const Text('My Trips', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+              const Text('Trippulse', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
               const SizedBox(height: 40),
               Icon(Icons.public, size: 100, color: Colors.blue.shade200),
               const SizedBox(height: 40),
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
                   }),
 
-              TextButton(onPressed: () {}, child: const Text('Forgot Password?', style: TextStyle(color: Colors.grey))),
+              
               const SizedBox(height: 20),
               _buildGoogleButton(), // ปุ่ม Google อันนี้คงไว้เหมือนเดิมเป๊ะๆ
               const SizedBox(height: 40),
