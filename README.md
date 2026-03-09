@@ -15,7 +15,7 @@
 ### 📱 วิธีทดสอบแอปพลิเคชันแบบสมบูรณ์ (แนะนำ)
 เพื่อให้คุณสามารถทดสอบฟีเจอร์ทั้งหมดได้อย่างสมบูรณ์ (รวมถึงระบบเข้าสู่ระบบด้วย Google) ขอแนะนำให้ติดตั้งและทดสอบผ่านไฟล์ APK ที่เราได้ทำการ Build และ Sign ด้วยคีย์ที่ถูกต้องของโปรเจกต์ไว้เรียบร้อยแล้ว
 
-[📦 **ดาวน์โหลดไฟล์ APK สำหรับทดสอบแอปได้ที่นี่**](https://drive.google.com/drive/folders/12qRx8Ii79FZqJLQa5rYRwkvjFzwSjUGb?usp=sharing)
+[📦 **คลิกที่นี่เพื่อดาวน์โหลดไฟล์ APK ทันที**](https://drive.google.com/uc?export=download&id=1tJYX54mhNNdJY6HBa2TofgfuvcBholA8)
 
 ##  Core Idea
 TripGuider คือแอปสำหรับ **วางแผนทริปท่องเที่ยวแบบครบในที่เดียว**  
