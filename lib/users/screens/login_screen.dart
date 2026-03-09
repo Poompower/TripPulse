@@ -92,7 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              Icon(Icons.public, size: 100, color: Colors.blue.shade200),
+              Image.asset(
+                'assets/images/logo.jpg',
+                height: 120,
+                width: 120,
+                fit: BoxFit.contain,
+              ),
               const SizedBox(height: 40),
               _buildInput(_emailController, 'Email', Icons.email_outlined),
               const SizedBox(height: 15),
