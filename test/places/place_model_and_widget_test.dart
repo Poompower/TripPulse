@@ -41,6 +41,32 @@ void main() {
     expect(restored.name, 'Temple');
   });
 
+  test('Place.fromGeoapify reads wiki fields and distance from datasource.raw', () {
+    final place = Place.fromGeoapify({
+      'properties': {
+        'place_id': 'p2',
+        'name': 'Grand Palace',
+        'formatted': 'Bangkok, Thailand',
+        'lat': 13.75,
+        'lon': 100.49,
+        'distance': 2450,
+        'datasource': {
+          'raw': {
+            'wikipedia': 'en:Grand_Palace',
+            'wikimedia_commons': 'Category:Grand_Palace',
+            'wikidata': 'Q123',
+          },
+        },
+        'categories': ['tourism.attraction'],
+      },
+    });
+
+    expect(place.wikipediaTitle, 'en:Grand_Palace');
+    expect(place.wikimediaCommons, 'Category:Grand_Palace');
+    expect(place.wikidataId, 'Q123');
+    expect(place.distanceKm, closeTo(2.45, 0.0001));
+  });
+
   testWidgets('EmptySearchStateWidget shows guidance text', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: EmptySearchStateWidget())),
