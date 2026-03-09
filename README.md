@@ -74,7 +74,6 @@ TripGuider คือแอปสำหรับ **วางแผนทริป
 
 ## 🛠 Tech Stack (Summary)
 - **Flutter** (Mobile Application)
-- **Riverpod** (State Management)
 - **Geoapify Places API** (Places Discovery)
 - **Google Sigin API**
 - **Frankfurter API**
