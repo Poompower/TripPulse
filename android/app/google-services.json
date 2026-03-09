@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "482504660458-iflu6dk7lvseqbvv7u8fvrs19si7eeqf.apps.googleusercontent.com",
+          "client_id": "482504660458-ahb7linm425osoosdek9n0a63qiq6l4f.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.trippulse",
-            "certificate_hash": "fdaff5922bc0f4c3d53e23e4c638c49920409b2a"
+            "certificate_hash": "d54d41369eef76bcda7c8a314bb74e5e7b923720"
           }
         },
         {
