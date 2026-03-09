@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import 'maps/screens/general_map_screen.dart';
@@ -11,6 +11,7 @@ import 'trips/screens/trip_list_screen.dart';
 import 'users/screens/login_screen.dart';
 import 'users/screens/profile_screen.dart';
 import 'users/screens/signup_screen.dart';
+import 'users/screens/auth_wrapper.dart';
 
 class TripPulseApp extends StatelessWidget {
   const TripPulseApp({super.key});
@@ -26,7 +27,7 @@ class TripPulseApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
             useMaterial3: true,
           ),
-          home: const LoginScreen(),
+          home: const AuthWrapper(),
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/login':
