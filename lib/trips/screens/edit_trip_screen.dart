@@ -516,13 +516,15 @@ class _EditTripScreenState extends State<EditTripScreen> {
                         final destination = _selectedDestination;
                         setState(() => _isSavingTrip = true);
 
+                        late final Trip updatedTrip;
+
                         try {
                           final convertedBudget = await _convertBudgetFromThb(
                             budgetThb: budgetThb,
                             targetCurrency: _selectedCurrency,
                           );
 
-                          final updatedTrip = Trip(
+                          updatedTrip = Trip(
                             id: widget.trip.id,
                             title: _titleCtrl.text,
                             destination:
@@ -564,7 +566,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
                         }
 
                         if (!context.mounted) return;
-                        Navigator.pop(context, true);
+                        Navigator.pop(context, updatedTrip);
                       },
                 child: const Text(
                   'Save Changes',

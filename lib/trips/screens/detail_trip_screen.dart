@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../../itenaries/models/activity.dart';
 import '../../itenaries/screens/activity_detail_screen.dart';
-import '../../itenaries/screens/add_activity_screen.dart';
 import '../../itenaries/screens/itinerary_detail_screen.dart';
 import '../../maps/screens/general_map_screen.dart';
 import '../../widgets/custom_bottom_bar.dart';
@@ -100,14 +99,15 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.black),
             onPressed: () async {
-              final result = await Navigator.push(
+              final result = await Navigator.push<Trip>(
                 context,
                 MaterialPageRoute(
                   builder: (context) => EditTripScreen(trip: _trip),
                 ),
               );
-              if (result == true) {
-                setState(() {});
+              if (!mounted) return;
+              if (result != null) {
+                setState(() => _trip = result);
               }
             },
           ),
@@ -326,30 +326,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ),
                   ],
                 ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.add_circle_outline,
-                  color: Color(0xFF2F80ED),
-                ),
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddActivityScreen(
-                        tripId: _trip.id,
-                        dayNumber: dayNumber,
-                      ),
-                    ),
-                  );
-
-                  if (!mounted) return;
-                  if (result == true) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Activity added')),
-                    );
-                  }
-                },
               ),
             ],
           ),

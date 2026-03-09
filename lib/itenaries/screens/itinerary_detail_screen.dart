@@ -68,7 +68,7 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
               category: data['category']?.toString(),
               lat: (data['lat'] as num?)?.toDouble(),
               lon: (data['lon'] as num?)?.toDouble(),
-            );
+           );
           }).toList();
 
           return _sortActivitiesForRoute(list);
