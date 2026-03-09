@@ -114,6 +114,7 @@ class DatabaseService {
         time: data['time'],
         imageUrl: data['imageUrl'],
         category: data['category'],
+        notes: data['notes'],
         lat: (data['lat'] as num?)?.toDouble(),
         lon: (data['lon'] as num?)?.toDouble(),
       );
@@ -139,6 +140,7 @@ class DatabaseService {
         time: data['time'],
         imageUrl: data['imageUrl'],
         category: data['category'],
+        notes: data['notes'],
         lat: (data['lat'] as num?)?.toDouble(),
         lon: (data['lon'] as num?)?.toDouble(),
       );
@@ -164,6 +166,7 @@ class DatabaseService {
               time: data['time']?.toString(),
               imageUrl: data['imageUrl']?.toString(),
               category: data['category']?.toString(),
+              notes: data['notes']?.toString(),
               lat: (data['lat'] as num?)?.toDouble(),
               lon: (data['lon'] as num?)?.toDouble(),
             );
@@ -193,6 +196,7 @@ class DatabaseService {
               time: data['time']?.toString(),
               imageUrl: data['imageUrl']?.toString(),
               category: data['category']?.toString(),
+              notes: data['notes']?.toString(),
               lat: (data['lat'] as num?)?.toDouble(),
               lon: (data['lon'] as num?)?.toDouble(),
             );

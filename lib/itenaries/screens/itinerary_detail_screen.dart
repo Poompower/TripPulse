@@ -66,9 +66,10 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
               time: data['time']?.toString(),
               imageUrl: data['imageUrl']?.toString(),
               category: data['category']?.toString(),
+              notes: data['notes']?.toString(),
               lat: (data['lat'] as num?)?.toDouble(),
               lon: (data['lon'] as num?)?.toDouble(),
-           );
+            );
           }).toList();
 
           return _sortActivitiesForRoute(list);
@@ -172,6 +173,119 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
     ).showSnackBar(SnackBar(content: Text('${activity.title} removed')));
   }
 
+  Future<void> _updateActivityNotes(Activity activity, String notes) async {
+    if (activity.id == null || widget.trip.id == null) return;
+    await FirebaseFirestore.instance
+        .collection('trips')
+        .doc(widget.trip.id.toString())
+        .collection('activities')
+        .doc(activity.id.toString())
+        .set({'notes': notes.trim()}, SetOptions(merge: true));
+  }
+
+  Future<void> _showEditNotesDialog(
+    BuildContext parentContext,
+    Activity activity,
+  ) async {
+    final controller = TextEditingController(text: activity.notes ?? '');
+    final saved = await showDialog<bool>(
+      context: parentContext,
+      builder: (dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Edit Notes',
+                  style: TextStyle(
+                    fontSize: 34 / 1.4,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E2430),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: controller,
+                  minLines: 4,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Add your note',
+                    filled: true,
+                    fillColor: const Color(0xFFF7F8FB),
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE4E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE4E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2F66EA)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Color(0xFF2F66EA),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      height: 44,
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF2F66EA),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 18),
+                          child: Text(
+                            'Save',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (saved == true) {
+      await _updateActivityNotes(activity, controller.text);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Notes updated')));
+      }
+    }
+  }
+
   void _showActivitySheet(Activity activity) {
     showModalBottomSheet<void>(
       context: context,
@@ -232,15 +346,53 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
               Text(
                 activity.location?.isNotEmpty == true
                     ? activity.location!
-                    : 'No notes for this place yet.',
+                    : 'No short description',
                 style: TextStyle(color: Colors.grey.shade700, fontSize: 15),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB8C8F4),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.note, size: 16, color: Color(0xFF2F66EA)),
+                        SizedBox(width: 6),
+                        Text(
+                          'Your Notes',
+                          style: TextStyle(
+                            color: Color(0xFF2F66EA),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15 / 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      activity.notes?.isNotEmpty == true
+                          ? activity.notes!
+                          : 'No notes yet',
+                      style: const TextStyle(
+                        color: Color(0xFF1E2430),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => _showEditNotesDialog(context, activity),
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit Notes'),
                       style: OutlinedButton.styleFrom(
@@ -274,6 +426,7 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
                             trip: widget.trip,
                             dayNumber: widget.dayNumber,
                             directionsOnly: true,
+                            fromItineraryDetail: true,
                             destinationLat: activity.lat,
                             destinationLon: activity.lon,
                             destinationLabel: activity.title,
@@ -400,6 +553,7 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
               arguments: GeneralMapArgs(
                 trip: widget.trip,
                 dayNumber: widget.dayNumber,
+                fromItineraryDetail: true,
               ),
             );
           },

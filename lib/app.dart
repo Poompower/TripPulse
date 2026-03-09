@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import 'maps/screens/general_map_screen.dart';
@@ -76,6 +76,7 @@ class TripPulseApp extends StatelessWidget {
                       trip: args.trip,
                       dayNumber: args.dayNumber,
                       directionsOnly: args.directionsOnly,
+                      fromItineraryDetail: args.fromItineraryDetail,
                       destinationLat: args.destinationLat,
                       destinationLon: args.destinationLon,
                       destinationLabel: args.destinationLabel,

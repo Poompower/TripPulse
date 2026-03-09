@@ -7,6 +7,7 @@ class Activity {
   final String? time;
   final String? imageUrl;
   final String? category;
+  final String? notes;
   final double? lat;
   final double? lon;
 
@@ -19,6 +20,7 @@ class Activity {
     this.time,
     this.imageUrl,
     this.category,
+    this.notes,
     this.lat,
     this.lon,
   });
@@ -33,6 +35,7 @@ class Activity {
       'time': time,
       'imageUrl': imageUrl,
       'category': category,
+      'notes': notes,
       'lat': lat,
       'lon': lon,
     };
@@ -48,6 +51,7 @@ class Activity {
       time: map['time'],
       imageUrl: map['imageUrl'],
       category: map['category'],
+      notes: map['notes'],
       lat: (map['lat'] as num?)?.toDouble(),
       lon: (map['lon'] as num?)?.toDouble(),
     );

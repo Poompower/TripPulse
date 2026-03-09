@@ -58,6 +58,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       time: _timeCtrl.text.isNotEmpty ? _timeCtrl.text : null,
       imageUrl: _activity.imageUrl,
       category: _activity.category,
+      notes: _activity.notes,
       lat: _activity.lat,
       lon: _activity.lon,
     );

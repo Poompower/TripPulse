@@ -18,6 +18,7 @@ class GeneralMapArgs {
   final Trip? trip;
   final int? dayNumber;
   final bool directionsOnly;
+  final bool fromItineraryDetail;
   final double? destinationLat;
   final double? destinationLon;
   final String? destinationLabel;
@@ -26,6 +27,7 @@ class GeneralMapArgs {
     this.trip,
     this.dayNumber,
     this.directionsOnly = false,
+    this.fromItineraryDetail = false,
     this.destinationLat,
     this.destinationLon,
     this.destinationLabel,
@@ -36,6 +38,7 @@ class GeneralMapScreen extends StatefulWidget {
   final Trip? trip;
   final int? dayNumber;
   final bool directionsOnly;
+  final bool fromItineraryDetail;
   final double? destinationLat;
   final double? destinationLon;
   final String? destinationLabel;
@@ -45,6 +48,7 @@ class GeneralMapScreen extends StatefulWidget {
     this.trip,
     this.dayNumber,
     this.directionsOnly = false,
+    this.fromItineraryDetail = false,
     this.destinationLat,
     this.destinationLon,
     this.destinationLabel,
@@ -236,6 +240,7 @@ class _GeneralMapScreenState extends State<GeneralMapScreen> {
               time: data['time']?.toString(),
               imageUrl: data['imageUrl']?.toString(),
               category: data['category']?.toString(),
+              notes: data['notes']?.toString(),
               lat: (data['lat'] as num?)?.toDouble(),
               lon: (data['lon'] as num?)?.toDouble(),
             );
@@ -270,6 +275,7 @@ class _GeneralMapScreenState extends State<GeneralMapScreen> {
               time: data['time']?.toString(),
               imageUrl: data['imageUrl']?.toString(),
               category: data['category']?.toString(),
+              notes: data['notes']?.toString(),
               lat: (data['lat'] as num?)?.toDouble(),
               lon: (data['lon'] as num?)?.toDouble(),
             );
@@ -392,6 +398,7 @@ class _GeneralMapScreenState extends State<GeneralMapScreen> {
             time: activity.time,
             imageUrl: activity.imageUrl,
             category: activity.category,
+            notes: activity.notes,
             lat: best.lat,
             lon: best.lon,
           );
@@ -610,11 +617,13 @@ class _GeneralMapScreenState extends State<GeneralMapScreen> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: Row(
                 children: [
-                  _circleAction(
-                    icon: Icons.arrow_back,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 10),
+                  if (widget.fromItineraryDetail) ...[
+                    _circleAction(
+                      icon: Icons.arrow_back,
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
