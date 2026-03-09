@@ -17,10 +17,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       backgroundColor: theme.colorScheme.surface,
       foregroundColor: theme.colorScheme.onSurface,
-      systemOverlayStyle:
-          theme.brightness == Brightness.light
-              ? SystemUiOverlayStyle.dark
-              : SystemUiOverlayStyle.light,
+      systemOverlayStyle: theme.brightness == Brightness.light
+          ? SystemUiOverlayStyle.dark
+          : SystemUiOverlayStyle.light,
       title: const _SearchPlaceBar(),
       centerTitle: false,
     );
@@ -61,8 +60,9 @@ class _SearchPlaceBar extends StatelessWidget {
             child: Text(
               'Search place (e.g. Tokyo, Japan)',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color:
-                    theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.6,
+                ),
               ),
             ),
           ),

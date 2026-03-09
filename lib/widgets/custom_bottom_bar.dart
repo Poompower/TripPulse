@@ -46,7 +46,7 @@ class CustomBottomBar extends StatelessWidget {
   // ----------------------------------------------------------------
   Widget _buildProfileIcon(BuildContext context, {required bool isSelected}) {
     final user = FirebaseAuth.instance.currentUser;
-    
+
     // ถ้ายังไม่ได้ Login ให้ใช้ Icon ธรรมดา
     if (user == null) {
       return Icon(isSelected ? Icons.person : Icons.person_outline);
@@ -54,12 +54,15 @@ class CustomBottomBar extends StatelessWidget {
 
     // ใช้ StreamBuilder เพื่อให้รูปเปลี่ยนทันทีที่มีการอัปเดตใน Database
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>?;
           final base64String = data?['photoBase64'] as String?;
-          
+
           if (base64String != null && base64String.isNotEmpty) {
             try {
               Uint8List imageBytes = base64Decode(base64String);
@@ -69,8 +72,11 @@ class CustomBottomBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   // ถ้าถูกเลือก (Active) ให้มีขอบสีวงกลมล้อมรอบ
-                  border: isSelected 
-                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) 
+                  border: isSelected
+                      ? Border.all(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2,
+                        )
                       : null,
                   image: DecorationImage(
                     image: MemoryImage(imageBytes),
@@ -95,7 +101,8 @@ class CustomBottomBar extends StatelessWidget {
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
-      backgroundColor: backgroundColor ?? theme.navigationBarTheme.backgroundColor,
+      backgroundColor:
+          backgroundColor ?? theme.navigationBarTheme.backgroundColor,
       elevation: elevation,
       height: 80,
       labelBehavior: showLabels
@@ -111,9 +118,13 @@ class CustomBottomBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      backgroundColor: backgroundColor ?? theme.bottomNavigationBarTheme.backgroundColor,
-      selectedItemColor: selectedItemColor ?? theme.bottomNavigationBarTheme.selectedItemColor,
-      unselectedItemColor: unselectedItemColor ?? theme.bottomNavigationBarTheme.unselectedItemColor,
+      backgroundColor:
+          backgroundColor ?? theme.bottomNavigationBarTheme.backgroundColor,
+      selectedItemColor:
+          selectedItemColor ?? theme.bottomNavigationBarTheme.selectedItemColor,
+      unselectedItemColor:
+          unselectedItemColor ??
+          theme.bottomNavigationBarTheme.unselectedItemColor,
       type: BottomNavigationBarType.fixed,
       elevation: elevation,
       showSelectedLabels: showLabels,
@@ -158,7 +169,9 @@ class CustomBottomBar extends StatelessWidget {
     );
   }
 
-  List<NavigationDestination> _buildNavigationDestinations(BuildContext context) {
+  List<NavigationDestination> _buildNavigationDestinations(
+    BuildContext context,
+  ) {
     return [
       const NavigationDestination(
         icon: Icon(Icons.explore_outlined),
@@ -188,7 +201,9 @@ class CustomBottomBar extends StatelessWidget {
     ];
   }
 
-  List<BottomNavigationBarItem> _buildBottomNavigationBarItems(BuildContext context) {
+  List<BottomNavigationBarItem> _buildBottomNavigationBarItems(
+    BuildContext context,
+  ) {
     return [
       const BottomNavigationBarItem(
         icon: Icon(Icons.explore_outlined),
@@ -254,8 +269,4 @@ class CustomBottomBar extends StatelessWidget {
   }
 }
 
-enum BottomBarVariant {
-  material3,
-  classic,
-  floating,
-}
+enum BottomBarVariant { material3, classic, floating }

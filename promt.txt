@@ -39,7 +39,7 @@ EXTERNAL APIS (USE THESE EXACTLY)
 
 1) Places (Attractions)
 - API: Geoapify Places API
-- Requires API key
+- Requires API key 41e231e5d78c40178f3b2a111eeb5d56
 - API key must be read from environment/config file
 - Purpose: fetch tourist attractions for a city or nearby coordinates
 - If API key is missing, provide a mock places service fallback
@@ -51,7 +51,7 @@ EXTERNAL APIS (USE THESE EXACTLY)
 - Cache responses briefly (memory or SQLite)
 
 3) Routes / Directions
-- API: Geoapify Routing API
+- API: Geoapify Routing API 41e231e5d78c40178f3b2a111eeb5d56
 - Uses the SAME Geoapify API key as Places API
 - Purpose: compute route distance and duration between places
 - API key must be read from environment/config file

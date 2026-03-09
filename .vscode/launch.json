@@ -1,0 +1,13 @@
+﻿{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (24090RA29G)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "24090RA29G",
+      "console": "terminal",
+      "toolArgs": ["--color"]
+    }
+  ]
+}

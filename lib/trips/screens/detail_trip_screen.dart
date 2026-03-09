@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -8,8 +7,10 @@ import '../../itenaries/models/activity.dart';
 import '../../itenaries/screens/activity_detail_screen.dart';
 import '../../itenaries/screens/add_activity_screen.dart';
 import '../../itenaries/screens/itinerary_detail_screen.dart';
+import '../../maps/screens/general_map_screen.dart';
 import '../../widgets/custom_bottom_bar.dart';
 import '../models/trip.dart';
+import '../services/database_service.dart';
 import '../widgets/weather_forecast_card.dart';
 import 'edit_trip_screen.dart';
 
@@ -25,7 +26,8 @@ class TripDetailScreen extends StatefulWidget {
 class _TripDetailScreenState extends State<TripDetailScreen> {
   late Trip _trip;
   List<Activity> _activities = [];
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _activitiesSub;
+  final DatabaseService _dbService = DatabaseService();
+  StreamSubscription<List<Activity>>? _activitiesSub;
 
   @override
   void initState() {
@@ -37,32 +39,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   void _listenActivities() {
     if (_trip.id == null) return;
 
-    _activitiesSub = FirebaseFirestore.instance
-        .collection('trips')
-        .doc(_trip.id.toString())
-        .collection('activities')
-        .orderBy('dayNumber')
-        .snapshots()
-        .listen((snapshot) {
-          final list = snapshot.docs.map((doc) {
-            final data = doc.data();
-            return Activity(
-              id: doc.id,
-              tripId: _trip.id.toString(),
-              dayNumber: (data['dayNumber'] as num?)?.toInt() ?? 1,
-              title: (data['title'] ?? '').toString(),
-              location: data['location']?.toString(),
-              time: data['time']?.toString(),
-              imageUrl: data['imageUrl']?.toString(),
-              category: data['category']?.toString(),
-              lat: (data['lat'] as num?)?.toDouble(),
-              lon: (data['lon'] as num?)?.toDouble(),
-            );
-          }).toList();
-
-          if (!mounted) return;
-          setState(() => _activities = list);
-        });
+    _activitiesSub = _dbService.streamActivitiesByTrip(_trip.id).listen((list) {
+      if (!mounted) return;
+      setState(() => _activities = list);
+    });
   }
 
   @override
@@ -234,7 +214,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         variant: BottomBarVariant.material3,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.pushNamed(
+            context,
+            '/general-map-screen',
+            arguments: GeneralMapArgs(trip: _trip),
+          );
+        },
         icon: const Icon(Icons.map),
         label: const Text('View on Map'),
         backgroundColor: const Color(0xFF2F80ED),

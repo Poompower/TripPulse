@@ -77,8 +77,8 @@ class DaySelectorBottomSheetWidget extends StatelessWidget {
   // Insert activity into database.
   Future<void> _addActivity(BuildContext context, int dayNumber) async {
     final db = DatabaseService();
-    final resolvedImageUrl =
-        await WikimediaImageService.instance.resolveImageUrl(place);
+    final resolvedImageUrl = await WikimediaImageService.instance
+        .resolveImageUrl(place);
 
     final activity = Activity(
       id: null,

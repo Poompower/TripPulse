@@ -89,6 +89,7 @@ class Place {
     'wikipediaTitle': wikipediaTitle,
     'wikimediaCommons': wikimediaCommons,
     'wikidataId': wikidataId,
+    'categories': categories,
   };
 
   factory Place.fromJson(Map<String, dynamic> json) => Place(
@@ -105,6 +106,8 @@ class Place {
     wikimediaCommons: json['wikimediaCommons'],
     wikidataId: json['wikidataId'],
     distanceKm: json['distanceKm'],
-    categories: (json['categories'] as List).map((e) => e.toString()).toList(),
+    categories: (json['categories'] as List? ?? const [])
+        .map((e) => e.toString())
+        .toList(),
   );
 }

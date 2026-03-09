@@ -49,10 +49,19 @@ class GeoapifyRoutingService {
     ),
   );
 
-  String get _apiKey {
-    final key = dotenv.env['GEOAPIFY_API_KEY'];
-    if (key == null || key.isEmpty) {
-      throw Exception('Geoapify API key missing');
+  bool _didLogApiKeyIssue = false;
+
+  String? get _apiKeyOrNull {
+    final key = dotenv.env['GEOAPIFY_API_KEY']?.trim();
+    if (key == null || key.isEmpty || key == 'YOUR_GEOAPIFY_API_KEY') {
+      if (!_didLogApiKeyIssue) {
+        developer.log(
+          'Geoapify API key is missing/placeholder. Routing API calls are skipped; using estimated route.',
+          name: 'GeoapifyRouting',
+        );
+        _didLogApiKeyIssue = true;
+      }
+      return null;
     }
     return key;
   }
@@ -102,13 +111,8 @@ class GeoapifyRoutingService {
       );
       grid = matrixPayload.$1;
       snappedSources = matrixPayload.$2;
-    } catch (e, st) {
-      developer.log(
-        'RouteMatrix API failed, using fallback estimation for segments',
-        name: 'GeoapifyRouting',
-        error: e,
-        stackTrace: st,
-      );
+    } catch (_) {
+      // Matrix is optional now. We primarily use Build a Route for geometry.
     }
 
     final effectivePoints =
@@ -123,18 +127,16 @@ class GeoapifyRoutingService {
     for (var i = 0; i < orderedPoints.length - 1; i++) {
       final from = orderedPoints[i];
       final to = orderedPoints[i + 1];
-      final fromOriginalIndex = waypointOrder[i];
-      final toOriginalIndex = waypointOrder[i + 1];
 
+      var estimated = false;
       double? km;
       int? min;
-      var estimated = false;
       List<LatLng> legPath = const [];
 
       final matrixCell = _readMatrixCell(
         grid: grid,
-        fromIndex: fromOriginalIndex,
-        toIndex: toOriginalIndex,
+        fromIndex: waypointOrder[i],
+        toIndex: waypointOrder[i + 1],
       );
       if (matrixCell != null) {
         final meters = _asDouble(matrixCell['distance']);
@@ -145,48 +147,25 @@ class GeoapifyRoutingService {
         }
       }
 
-      // If matrix has no value, try routing API for this leg before estimating straight line.
-      if (km == null || min == null) {
-        final routingLeg = await _requestRoutingLeg(
-          from: from,
-          to: to,
-          mode: mode,
-        );
-        if (routingLeg != null) {
-          km = routingLeg.distanceKm;
-          min = routingLeg.durationMinutes;
-          legPath = routingLeg.path;
-        }
-      }
-
-      if (km == null || min == null) {
-        estimated = true;
-        km = distance.as(LengthUnit.Kilometer, from, to);
-        min = ((km / walkKmPerHour) * 60).round();
-      }
-
-      // Always try to get walking geometry for map rendering,
-      // even when matrix already returned distance/time.
-      if (legPath.length <= 1) {
-        final routingLeg = await _requestRoutingLeg(
-          from: from,
-          to: to,
-          mode: mode,
-        );
-        if (routingLeg != null && routingLeg.path.length > 1) {
-          legPath = routingLeg.path;
-        }
-      }
-
-      if (legPath.length > 1) {
-        pathSegments.add(legPath);
+      final routingLeg = await _requestRoutingLeg(
+        from: from,
+        to: to,
+        mode: mode,
+      );
+      if (routingLeg != null) {
+        km ??= routingLeg.distanceKm;
+        min ??= routingLeg.durationMinutes;
+        legPath = routingLeg.path.length > 1
+            ? routingLeg.path
+            : <LatLng>[from, to];
       } else {
-        developer.log(
-          'No routing geometry for leg ${i + 1}->${i + 2}',
-          name: 'GeoapifyRouting',
-        );
+        estimated = true;
+        km ??= distance.as(LengthUnit.Kilometer, from, to);
+        min ??= ((km / walkKmPerHour) * 60).round();
+        legPath = <LatLng>[from, to];
       }
 
+      pathSegments.add(legPath);
       totalKm += km;
       totalMin += min;
       segments.add(
@@ -199,21 +178,8 @@ class GeoapifyRoutingService {
         ),
       );
     }
-    final mergedPath = <LatLng>[];
-    if (pathSegments.isEmpty && orderedPoints.length >= 2) {
-      final fullPath = await _requestRoutingPathForWaypoints(
-        waypoints: orderedPoints,
-        mode: mode,
-      );
-      if (fullPath.length > 1) {
-        pathSegments.add(fullPath);
-        developer.log(
-          'Using full-waypoints routing geometry fallback',
-          name: 'GeoapifyRouting',
-        );
-      }
-    }
 
+    final mergedPath = <LatLng>[];
     for (final segmentPath in pathSegments) {
       if (mergedPath.isEmpty) {
         mergedPath.addAll(segmentPath);
@@ -284,27 +250,29 @@ class GeoapifyRoutingService {
     required List<LatLng> waypoints,
     required String mode,
   }) async {
+    final apiKey = _apiKeyOrNull;
+    if (apiKey == null) return (null, null);
+
     final points = waypoints
-        .map((p) => {'location': [p.longitude, p.latitude]})
+        .map(
+          (p) => {
+            'location': [p.longitude, p.latitude],
+          },
+        )
         .toList();
 
     final response = await _dio.post(
       '/routematrix',
-      queryParameters: {'apiKey': _apiKey},
-      options: Options(
-        headers: const {'Content-Type': 'application/json'},
-      ),
-      data: {
-        'mode': mode,
-        'sources': points,
-        'targets': points,
-      },
+      queryParameters: {'apiKey': apiKey},
+      options: Options(headers: const {'Content-Type': 'application/json'}),
+      data: {'mode': mode, 'sources': points, 'targets': points},
     );
 
     final data = response.data;
     if (data is! Map<String, dynamic>) return (null, null);
 
-    final grid = data['sources_to_targets'] ??
+    final grid =
+        data['sources_to_targets'] ??
         data['sourcesToTargets'] ??
         data['matrix'];
     final snappedSources = _parseSnappedLocations(data['sources']);
@@ -372,14 +340,17 @@ class GeoapifyRoutingService {
     required LatLng to,
     required String mode,
   }) async {
+    final apiKey = _apiKeyOrNull;
+    if (apiKey == null) return null;
+
     try {
       final response = await _dio.get(
         '/routing',
         queryParameters: {
           'waypoints':
-              '${from.longitude},${from.latitude}|${to.longitude},${to.latitude}',
+              '${from.latitude},${from.longitude}|${to.latitude},${to.longitude}',
           'mode': mode,
-          'apiKey': _apiKey,
+          'apiKey': apiKey,
         },
       );
       final features = response.data['features'] as List?;
@@ -397,6 +368,16 @@ class GeoapifyRoutingService {
         path: path,
       );
     } catch (e, st) {
+      if (e is DioException && e.response?.statusCode == 401) {
+        if (!_didLogApiKeyIssue) {
+          developer.log(
+            'Geoapify API returned 401 (unauthorized). Check GEOAPIFY_API_KEY.',
+            name: 'GeoapifyRouting',
+          );
+          _didLogApiKeyIssue = true;
+        }
+        return null;
+      }
       developer.log(
         'Routing leg request failed',
         name: 'GeoapifyRouting',
@@ -407,44 +388,14 @@ class GeoapifyRoutingService {
     }
   }
 
-  Future<List<LatLng>> _requestRoutingPathForWaypoints({
-    required List<LatLng> waypoints,
-    required String mode,
-  }) async {
-    if (waypoints.length < 2) return const [];
-    final waypointParam = waypoints
-        .map((p) => '${p.longitude},${p.latitude}')
-        .join('|');
-    try {
-      final response = await _dio.get(
-        '/routing',
-        queryParameters: {
-          'waypoints': waypointParam,
-          'mode': mode,
-          'apiKey': _apiKey,
-        },
-      );
-      final features = response.data['features'] as List?;
-      if (features == null || features.isEmpty) return const [];
-      final first = features.first as Map<String, dynamic>;
-      final geometry = first['geometry'] as Map<String, dynamic>? ?? {};
-      return _parseCoordinatesToPath(geometry['coordinates']);
-    } catch (e, st) {
-      developer.log(
-        'Full-waypoints routing geometry request failed',
-        name: 'GeoapifyRouting',
-        error: e,
-        stackTrace: st,
-      );
-      return const [];
-    }
-  }
-
   List<LatLng> _parseCoordinatesToPath(dynamic coordinates) {
     final points = <LatLng>[];
 
     void visit(dynamic node) {
-      if (node is List && node.length >= 2 && node[0] is num && node[1] is num) {
+      if (node is List &&
+          node.length >= 2 &&
+          node[0] is num &&
+          node[1] is num) {
         points.add(
           LatLng((node[1] as num).toDouble(), (node[0] as num).toDouble()),
         );

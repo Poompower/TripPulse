@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import 'maps/screens/general_map_screen.dart';
@@ -39,7 +39,9 @@ class TripPulseApp extends StatelessWidget {
               case '/trip-list-screen':
                 return MaterialPageRoute(builder: (_) => TripListScreen());
               case '/trip/create':
-                return MaterialPageRoute(builder: (_) => const CreateTripScreen());
+                return MaterialPageRoute(
+                  builder: (_) => const CreateTripScreen(),
+                );
               case '/trip/detail':
                 final trip = settings.arguments as Trip;
                 return MaterialPageRoute(
@@ -72,6 +74,10 @@ class TripPulseApp extends StatelessWidget {
                     builder: (_) => GeneralMapScreen(
                       trip: args.trip,
                       dayNumber: args.dayNumber,
+                      directionsOnly: args.directionsOnly,
+                      destinationLat: args.destinationLat,
+                      destinationLon: args.destinationLon,
+                      destinationLabel: args.destinationLabel,
                     ),
                   );
                 }

@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../itenaries/models/activity.dart';
 import '../models/trip.dart';
+
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -21,13 +22,14 @@ class DatabaseService {
 
     await docRef.set(trip.toMap(), SetOptions(merge: true));
   }
-  
+
   Future<List<Trip>> trips() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
-    final querySnapshot = await _db.collection(_collection)
-      .where('userId', isEqualTo: user.uid) 
-      .get();
+    final querySnapshot = await _db
+        .collection(_collection)
+        .where('userId', isEqualTo: user.uid)
+        .get();
     return querySnapshot.docs.map((doc) {
       final data = doc.data();
       return Trip(
@@ -143,6 +145,61 @@ class DatabaseService {
     }).toList();
   }
 
+  Stream<List<Activity>> streamActivitiesByTrip(dynamic tripId) {
+    return _db
+        .collection(_collection)
+        .doc(tripId.toString())
+        .collection(_activitiesCollection)
+        .orderBy('dayNumber')
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return Activity(
+              id: doc.id,
+              tripId: tripId.toString(),
+              dayNumber: (data['dayNumber'] as num?)?.toInt() ?? 1,
+              title: (data['title'] ?? '').toString(),
+              location: data['location']?.toString(),
+              time: data['time']?.toString(),
+              imageUrl: data['imageUrl']?.toString(),
+              category: data['category']?.toString(),
+              lat: (data['lat'] as num?)?.toDouble(),
+              lon: (data['lon'] as num?)?.toDouble(),
+            );
+          }).toList();
+        });
+  }
+
+  Stream<List<Activity>> streamActivitiesByDay({
+    required dynamic tripId,
+    required int dayNumber,
+  }) {
+    return _db
+        .collection(_collection)
+        .doc(tripId.toString())
+        .collection(_activitiesCollection)
+        .where('dayNumber', isEqualTo: dayNumber)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return Activity(
+              id: doc.id,
+              tripId: tripId.toString(),
+              dayNumber: (data['dayNumber'] as num?)?.toInt() ?? dayNumber,
+              title: (data['title'] ?? '').toString(),
+              location: data['location']?.toString(),
+              time: data['time']?.toString(),
+              imageUrl: data['imageUrl']?.toString(),
+              category: data['category']?.toString(),
+              lat: (data['lat'] as num?)?.toDouble(),
+              lon: (data['lon'] as num?)?.toDouble(),
+            );
+          }).toList();
+        });
+  }
+
   Future<void> deleteActivity(dynamic tripId, dynamic activityId) async {
     await _db
         .collection(_collection)
@@ -240,6 +297,7 @@ class DatabaseService {
 
     await _db.collection('users').doc(uid).update({'photoBase64': base64Image});
   }
+
   Future<bool> checkUserProfileComplete(String uid) async {
     try {
       DocumentSnapshot doc = await _db.collection('users').doc(uid).get();

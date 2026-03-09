@@ -167,9 +167,9 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
     if (activity.id == null) return;
     await DatabaseService().deleteActivity(widget.trip.id, activity.id);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${activity.title} removed')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${activity.title} removed')));
   }
 
   void _showActivitySheet(Activity activity) {
@@ -209,14 +209,23 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
               const SizedBox(height: 16),
               Text(
                 activity.title,
-                style: const TextStyle(fontSize: 36 / 1.4, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 36 / 1.4,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 6),
               Row(
                 children: [
-                  _metaChip(Icons.location_city, (activity.category ?? 'Landmark').toUpperCase()),
+                  _metaChip(
+                    Icons.location_city,
+                    (activity.category ?? 'Landmark').toUpperCase(),
+                  ),
                   const Spacer(),
-                  _metaChip(Icons.schedule_outlined, activity.time ?? '2-3 hours'),
+                  _metaChip(
+                    Icons.schedule_outlined,
+                    activity.time ?? '2-3 hours',
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -246,7 +255,31 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (activity.lat == null || activity.lon == null) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Location is missing for this activity',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        Navigator.pushNamed(
+                          this.context,
+                          '/general-map-screen',
+                          arguments: GeneralMapArgs(
+                            trip: widget.trip,
+                            dayNumber: widget.dayNumber,
+                            directionsOnly: true,
+                            destinationLat: activity.lat,
+                            destinationLon: activity.lon,
+                            destinationLabel: activity.title,
+                          ),
+                        );
+                      },
                       icon: const Icon(Icons.assistant_direction, size: 18),
                       label: const Text('Directions'),
                       style: FilledButton.styleFrom(
@@ -269,7 +302,8 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final dayDate = _dateForDay();
-    final dayLabel = 'Day ${widget.dayNumber} - ${DateFormat('MMMM d, yyyy').format(dayDate)}';
+    final dayLabel =
+        'Day ${widget.dayNumber} - ${DateFormat('MMMM d, yyyy').format(dayDate)}';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FB),
@@ -308,12 +342,16 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
             builder: (context, routeSnapshot) {
               final totalDistance = routeSnapshot.data?.distanceKm ?? 0.0;
               final estimatedMinutes = routeSnapshot.data?.durationMinutes ?? 0;
-              final segments = routeSnapshot.data?.segments ?? const <GeoapifyRouteSegment>[];
-              final hasEstimated = routeSnapshot.data?.hasEstimatedSegments ?? false;
+              final segments =
+                  routeSnapshot.data?.segments ??
+                  const <GeoapifyRouteSegment>[];
+              final hasEstimated =
+                  routeSnapshot.data?.hasEstimatedSegments ?? false;
               final waypointActivities = activities
                   .where((a) => a.lat != null && a.lon != null)
                   .toList();
-              final waypointOrder = routeSnapshot.data?.waypointOrder ?? const <int>[];
+              final waypointOrder =
+                  routeSnapshot.data?.waypointOrder ?? const <int>[];
               final orderedWaypointActivities = _applyWaypointOrder(
                 waypointActivities,
                 waypointOrder,
@@ -338,10 +376,12 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
                   if (renderedActivities.isEmpty)
                     _buildEmptyState()
                   else
-                    ...renderedActivities.map((activity) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildSwipeCard(activity),
-                        )),
+                    ...renderedActivities.map(
+                      (activity) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildSwipeCard(activity),
+                      ),
+                    ),
                 ],
               );
             },
@@ -421,18 +461,26 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
                       children: [
                         const Text(
                           'Route Summary',
-                          style: TextStyle(fontSize: 18 / 1.4, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            fontSize: 18 / 1.4,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${distanceKm.toStringAsFixed(1)} km - $estimatedMinutes mins',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 15 / 1.4),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 15 / 1.4,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   Icon(
-                    _summaryExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    _summaryExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: const Color(0xFF7B8395),
                   ),
                 ],
@@ -441,16 +489,28 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
           ),
           if (_summaryExpanded) ...[
             const Divider(height: 20),
-            _summaryRow(Icons.straighten, 'Total Distance', '${distanceKm.toStringAsFixed(1)} km'),
+            _summaryRow(
+              Icons.straighten,
+              'Total Distance',
+              '${distanceKm.toStringAsFixed(1)} km',
+            ),
             const SizedBox(height: 10),
-            _summaryRow(Icons.schedule, 'Estimated Time', '$estimatedMinutes mins'),
+            _summaryRow(
+              Icons.schedule,
+              'Estimated Time',
+              '$estimatedMinutes mins',
+            ),
             const SizedBox(height: 10),
             _summaryRow(Icons.directions_walk, 'Transport Mode', 'WALKING'),
             if (hasEstimatedSegments) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 16),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700,
+                    size: 16,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -482,8 +542,8 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
               ...segments.map((segment) {
                 final fromIndex = segment.fromStop - 1;
                 final toIndex = segment.toStop - 1;
-                final fromName = (fromIndex >= 0 &&
-                        fromIndex < waypointActivities.length)
+                final fromName =
+                    (fromIndex >= 0 && fromIndex < waypointActivities.length)
                     ? waypointActivities[fromIndex].title
                     : 'Stop ${segment.fromStop}';
                 final toName =
@@ -580,7 +640,10 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
             SizedBox(height: 6),
             Text(
               'Remove',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -642,7 +705,11 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.schedule, size: 16, color: Colors.grey.shade500),
+                        Icon(
+                          Icons.schedule,
+                          size: 16,
+                          color: Colors.grey.shade500,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           activity.time ?? '2-3 hours',
@@ -678,7 +745,10 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> {
           const SizedBox(height: 8),
           const Text(
             'No places for this day yet',
-            style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1E2430)),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E2430),
+            ),
           ),
           const SizedBox(height: 4),
           Text(

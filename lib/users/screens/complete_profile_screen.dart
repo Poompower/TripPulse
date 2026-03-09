@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 import '../../trips/services/database_service.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
-  final User user; // รับข้อมูล User ที่ได้จาก Google
+  final User user;
+
   const CompleteProfileScreen({super.key, required this.user});
 
   @override
@@ -17,36 +18,39 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   final DatabaseService _dbService = DatabaseService();
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // พยายามแยกชื่อ-นามสกุล ที่ Google ส่งมาให้ (ถ้ามี)
-    List<String> nameParts = (widget.user.displayName ?? '').split(' ');
-    if (nameParts.isNotEmpty) {
-      _firstNameController.text = nameParts[0];
+    final nameParts = (widget.user.displayName ?? '').trim().split(' ');
+    if (nameParts.isNotEmpty && nameParts.first.isNotEmpty) {
+      _firstNameController.text = nameParts.first;
       if (nameParts.length > 1) {
         _lastNameController.text = nameParts.sublist(1).join(' ');
       }
     }
   }
 
-  void _handleSave() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      // เช็คเบอร์ซ้ำ
-      bool isDuplicate = await _dbService.checkPhoneDuplicate(_phoneController.text);
+    setState(() => _isLoading = true);
+    try {
+      final isDuplicate = await _dbService.checkPhoneDuplicate(
+        _phoneController.text.trim(),
+      );
+      if (!mounted) return;
+
       if (isDuplicate) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('เบอร์โทรนี้ถูกใช้งานแล้ว')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This phone number is already in use')),
+        );
         return;
       }
 
-      // บันทึกข้อมูลลง Database
       await _dbService.saveUser(
         uid: widget.user.uid,
         email: widget.user.email ?? '',
@@ -54,64 +58,102 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         lastName: _lastNameController.text.trim(),
         phone: _phoneController.text.trim(),
       );
+      if (!mounted) return;
 
-      // ถ้า Google มีรูปโปรไฟล์มาให้ ก็อัปเดต URL ไปเลย (แถม)
       if (widget.user.photoURL != null) {
-        await FirebaseFirestore.instance.collection('users').doc(widget.user.uid).update({
-          'photoUrl': widget.user.photoURL // เก็บ URL ของ Google ไว้ใช้ได้เลย
-        });
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.user.uid)
+            .update({'photoUrl': widget.user.photoURL});
+        if (!mounted) return;
       }
 
-      setState(() => _isLoading = false);
       Navigator.pushReplacementNamed(context, '/trip-list-screen');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Complete Profile'), automaticallyImplyLeading: false),
+      appBar: AppBar(
+        title: const Text('Complete Profile'),
+        automaticallyImplyLeading: false,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(30.0),
+        padding: const EdgeInsets.all(30),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('เกือบเสร็จแล้ว!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text(
+                'Almost done!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
-              const Text('กรุณากรอกข้อมูลเพิ่มเติมเพื่อตั้งค่าโปรไฟล์ของคุณ'),
+              const Text('Please complete your profile details.'),
               const SizedBox(height: 30),
-
               TextFormField(
                 controller: _firstNameController,
-                decoration: InputDecoration(labelText: 'First Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))),
-                validator: (val) => val!.isEmpty ? 'กรุณากรอกชื่อ' : null,
+                decoration: InputDecoration(
+                  labelText: 'First Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Please enter first name';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
-
               TextFormField(
                 controller: _lastNameController,
-                decoration: InputDecoration(labelText: 'Last Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))),
-                validator: (val) => val!.isEmpty ? 'กรุณากรอกนามสกุล' : null,
+                decoration: InputDecoration(
+                  labelText: 'Last Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Please enter last name';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
-
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))),
-                validator: (val) => val!.isEmpty ? 'กรุณากรอกเบอร์โทร' : null,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Please enter phone number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 30),
-
               SizedBox(
-                width: double.infinity, height: 55,
+                width: double.infinity,
+                height: 55,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleSave,
-                  child: _isLoading ? const CircularProgressIndicator() : const Text('ยืนยันข้อมูล'),
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('Confirm'),
                 ),
-              )
+              ),
             ],
           ),
         ),

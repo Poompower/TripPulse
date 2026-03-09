@@ -104,7 +104,14 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Day ${widget.dayNumber}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  Text(
+                    'Day ${widget.dayNumber}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   TextField(
                     controller: _titleCtrl,
@@ -113,7 +120,10 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                       hintText: 'e.g., Visit Museum',
                       filled: true,
                       fillColor: const Color(0xFFF9FAFB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -122,10 +132,16 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                     decoration: InputDecoration(
                       labelText: 'Location',
                       hintText: 'e.g., City Museum',
-                      prefixIcon: const Icon(Icons.location_on_outlined, color: Colors.blue),
+                      prefixIcon: const Icon(
+                        Icons.location_on_outlined,
+                        color: Colors.blue,
+                      ),
                       filled: true,
                       fillColor: const Color(0xFFF9FAFB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -137,10 +153,16 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                         decoration: InputDecoration(
                           labelText: 'Time',
                           hintText: 'Select time',
-                          prefixIcon: const Icon(Icons.schedule_outlined, color: Colors.blue),
+                          prefixIcon: const Icon(
+                            Icons.schedule_outlined,
+                            color: Colors.blue,
+                          ),
                           filled: true,
                           fillColor: const Color(0xFFF9FAFB),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
                     ),
@@ -155,9 +177,19 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A1A1A), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A1A1A),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
                 onPressed: _saveActivity,
-                child: const Text('Add Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Add Activity',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ),
