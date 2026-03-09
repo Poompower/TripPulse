@@ -60,7 +60,6 @@ TripGuider คือแอปสำหรับ **วางแผนทริป
 
 ### 6) Route Summary (External API)
 - คำนวณระยะทางและเวลาเดินทางโดยประมาณระหว่างสถานที่
-- ใช้ **OpenRouteService API**
 - แสดงผลในรูปแบบสรุป เช่น distance และ duration
 
 ---
