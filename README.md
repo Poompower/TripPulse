@@ -17,6 +17,8 @@
 
 [📦 **คลิกที่นี่เพื่อดาวน์โหลดไฟล์ APK ทันที**](https://drive.google.com/uc?export=download&id=1tJYX54mhNNdJY6HBa2TofgfuvcBholA8)
 
+[📦 **เอกสารนำเสนอโปรเจกต์**](https://www.canva.com/design/DAHDdAok2xA/jfYXKPsL6dMKHvzQ5yWJsg/edit?utm_content=DAHDdAok2xA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+
 ##  Core Idea
 TripGuider คือแอปสำหรับ **วางแผนทริปท่องเที่ยวแบบครบในที่เดียว**  
 ช่วยให้ผู้ใช้สามารถสร้างทริป กำหนดการเดินทางรายวัน ค้นหาสถานที่จาก External API และดูข้อมูลประกอบการเดินทางได้อย่างเป็นระบบ ลดความยุ่งยากจากการใช้หลายแอปพร้อมกัน
