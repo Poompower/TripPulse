@@ -85,6 +85,11 @@ TripGuider คือแอปสำหรับ **วางแผนทริป
 
 ## Preview Design
 https://preview.builtwithrocket.new/TripPulse-9eox848
+
+---
+
+## Demo Video
+https://youtu.be/4ZrRam5ifCo
 ---
 
 ## สมาชิก
